@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CarWash99 - Manajemen Cuci Mobil Premium</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: { 900: '#040a1a', 800: '#0a1128', 700: '#0d1b3e', 600: '#132456', 500: '#1a2f6b' },
+                        royal: { 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+                        gold: { 300: '#f5d98c', 400: '#f0c040', 500: '#d4af37', 600: '#c9a227', 700: '#a88620' },
+                        ice: { 100: '#e8f0fe', 200: '#c5d9f7', 300: '#93c5fd', 400: '#60a5fa' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --bg-deep: #040a1a;
+            --bg-card: rgba(13, 27, 62, 0.6);
+            --bg-glass: rgba(255, 255, 255, 0.04);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-gold: rgba(212, 175, 55, 0.3);
+            --gold: #d4af37;
+            --gold-light: #f0c040;
+            --blue-glow: rgba(59, 130, 246, 0.3);
+            --text-primary: #f0f4ff;
+            --text-secondary: #8ba3cc;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .font-display { font-family: 'Playfair Display', serif; }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(212,175,55,0.5); }
+
+        #particleCanvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .glass-card:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+            box-shadow: 0 8px 40px rgba(59, 130, 246, 0.08), 0 0 0 1px rgba(212, 175, 55, 0.1);
+        }
+
+        .gold-border {
+            border: 1px solid var(--border-gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.05), inset 0 0 20px rgba(212, 175, 55, 0.02);
+        }
+
+        .btn-shimmer {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #2563eb 100%);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            transition: all 0.3s ease;
+        }
+        .btn-shimmer::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            transition: left 0.6s ease;
+        }
+        .btn-shimmer:hover::before { left: 100%; }
+        .btn-shimmer:hover {
+            box-shadow: 0 6px 30px rgba(37, 99, 235, 0.4);
+            transform: translateY(-1px);
+        }
+        .btn-shimmer:active { transform: scale(0.97); }
+
+        .btn-gold {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #f0c040 100%);
+            color: #040a1a;
+            border: none;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+        .btn-gold::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.6s ease;
+        }
+        .btn-gold:hover::before { left: 100%; }
+        .btn-gold:hover {
+            box-shadow: 0 6px 30px rgba(212, 175, 55, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .lux-input {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 14px 18px;
+            color: var(--text-primary);
+            font-size: 15px;
+            width: 100%;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        .lux-input::placeholder { color: rgba(139, 163, 204, 0.5); }
+        .lux-input:focus {
+            border-color: rgba(212, 175, 55, 0.4);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.08), 0 0 20px rgba(59, 130, 246, 0.1);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .stat-card {
+            position: relative;
+            overflow: hidden;
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid var(--border-glass);
+            transition: all 0.4s ease;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%; right: -50%;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%);
+            transition: all 0.4s ease;
+        }
+        .stat-card:hover::before {
+            top: -30%; right: -30%;
+            background: radial-gradient(circle, rgba(212,175,55,0.1) 0%, transparent 70%);
+        }
+        .stat-card:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .tab-luxury {
+            position: relative;
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-secondary);
+            border-radius: 14px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            white-space: nowrap;
+        }
+        .tab-luxury.active {
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.08);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+        .tab-luxury:not(.active):hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .glow-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+            animation: orbFloat 15s ease-in-out infinite;
+        }
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -40px) scale(1.1); }
+            50% { transform: translate(-20px, 20px) scale(0.95); }
+            75% { transform: translate(40px, 30px) scale(1.05); }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(4, 10, 26, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal-box {
+            background: linear-gradient(145deg, #0d1b3e 0%, #0a1128 100%);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 400px;
+            width: 100%;
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 40px rgba(59, 130, 246, 0.05);
+        }
+        .modal-overlay.show .modal-box {
+            transform: scale(1) translateY(0);
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: linear-gradient(135deg, #0d1b3e, #132456);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 16px;
+            padding: 16px 24px;
+            color: var(--text-primary);
+            font-size: 14px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            max-width: 320px;
+        }
+        .toast.show { transform: translateX(0); }
+
+        .transaksi-btn {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(145deg, rgba(37, 99, 235, 0.15), rgba(29, 78, 216, 0.25));
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 18px;
+            padding: 18px 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .transaksi-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 100%; height: 3px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .transaksi-btn:hover {
+            border-color: rgba(212, 175, 55, 0.3);
+            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.15);
+            transform: translateY(-3px);
+        }
+        .transaksi-btn:hover::after { opacity: 1; }
+        .transaksi-btn:active { transform: scale(0.97); }
+
+        .gold-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent);
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-in {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+        .animate-delay-1 { animation-delay: 0.1s; opacity: 0; }
+        .animate-delay-2 { animation-delay: 0.2s; opacity: 0; }
+        .animate-delay-3 { animation-delay: 0.3s; opacity: 0; }
+        .animate-delay-4 { animation-delay: 0.4s; opacity: 0; }
+
+        @keyframes shimmer-text {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        .shimmer-text {
+            background: linear-gradient(90deg, var(--gold) 0%, #f5d98c 25%, var(--gold) 50%, #f5d98c 75%, var(--gold) 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer-text 4s linear infinite;
+        }
+
+        .btn-delete {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            background: rgba(239, 68, 68, 0.08);
+            color: #f87171;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.4);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.1);
+        }
+
+        .chart-glow {
+            position: relative;
+        }
+        .chart-glow::before {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 10%; right: 10%;
+            height: 60%;
+            background: radial-gradient(ellipse at bottom, rgba(59,130,246,0.06) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="particleCanvas"></canvas>
+
+    <div class="glow-orb" style="width:400px;height:400px;background:#2563eb;top:-100px;left:-100px;animation-delay:0s;"></div>
+    <div class="glow-orb" style="width:350px;height:350px;background:#d4af37;bottom:-80px;right:-80px;animation-delay:-5s;"></div>
+    <div class="glow-orb" style="width:250px;height:250px;background:#1d4ed8;top:50%;left:60%;animation-delay:-10s;opacity:0.08;"></div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="modal-overlay" id="customModal">
+        <div class="modal-box">
+            <div id="modalIcon" class="text-center text-4xl mb-4"></div>
+            <h3 id="modalTitle" class="font-display text-xl font-bold text-center mb-2"></h3>
+            <p id="modalDesc" class="text-center text-sm mb-6" style="color:var(--text-secondary)"></p>
+            <div id="modalInputs" class="space-y-3 mb-6"></div>
+            <div id="modalOptions" class="space-y-2 mb-6" style="display:none;"></div>
+            <div class="flex gap-3">
+                <button id="modalCancel" class="flex-1 py-3 rounded-xl font-semibold text-sm" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text-secondary);cursor:pointer;transition:all 0.3s ease;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">Batal</button>
+                <button id="modalConfirm" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer">Konfirmasi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== LAYAR AUTH ==================== -->
+    <div id="authScreen" class="min-h-screen flex items-center justify-center p-4 relative z-10" style="display:flex;">
+        <div class="glass-card gold-border p-8 max-w-md w-full animate-in">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4" style="background:linear-gradient(135deg,rgba(37,99,235,0.2),rgba(212,175,55,0.15));border:1px solid rgba(212,175,55,0.2);">
+                    <i class="fas fa-car-side text-3xl" style="color:var(--gold);"></i>
+                </div>
+                <h1 class="font-display text-4xl font-black shimmer-text mb-1">CarWash99</h1>
+                <p class="text-sm tracking-widest uppercase" style="color:var(--text-secondary);letter-spacing:3px;">Premium Car Wash Management</p>
+            </div>
+
+            <div class="mb-6 animate-in animate-delay-1">
+                <h2 class="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider" style="color:var(--gold);">
+                    <span class="w-6 h-px" style="background:var(--gold);"></span>
+                    Masuk ke Akun
+                    <span class="flex-1 h-px" style="background:rgba(212,175,55,0.2);"></span>
+                </h2>
+                <input type="email" id="loginEmail" placeholder="Email anda" class="lux-input mb-3">
+                <input type="password" id="loginPassword" placeholder="Password" class="lux-input mb-4">
+                <button id="loginBtn" class="btn-shimmer w-full py-3.5 rounded-xl font-semibold text-white text-sm tracking-wide">
+                    <i class="fas fa-arrow-right-to-bracket mr-2"></i>MASUK
+                </button>
+            </div>
+
+            <div class="gold-divider my-6"></div>
+
+            <div class="animate-in animate-delay-2">
+                <h2 class="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider" style="color:var(--gold);">
+                    <span class="w-6 h-px" style="background:var(--gold);"></span>
+                    Buat Akun Baru
+                    <span class="flex-1 h-px" style="background:rgba(212,175,55,0.2);"></span>
+                </h2>
+                <input type="email" id="registerEmail" placeholder="Email baru" class="lux-input mb-3">
+                <input type="password" id="registerPassword" placeholder="Buat password" class="lux-input mb-4">
+                <button id="registerBtn" class="btn-gold w-full py-3.5 rounded-xl text-sm tracking-wide">
+                    <i class="fas fa-crown mr-2"></i>DAFTAR SEKARANG
+                </button>
+            </div>
+
+            <p class="text-center text-xs mt-6" style="color:rgba(139,163,204,0.4);">Dilindungi enkripsi end-to-end</p>
+        </div>
+    </div>
+
+    <!-- ==================== LAYAR APLIKASI ==================== -->
+    <div id="appScreen" class="max-w-md mx-auto pb-28 relative z-10" style="display:none;">
+
+        <header class="sticky top-0 z-50 px-4 pt-4 pb-0">
+            <div class="glass-card gold-border p-5" style="border-radius:0 0 24px 24px;border-top:none;">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-full flex items-center justify-center" style="background:linear-gradient(135deg,rgba(212,175,55,0.2),rgba(37,99,235,0.2));border:1px solid rgba(212,175,55,0.2);">
+                            <i class="fas fa-car-side" style="color:var(--gold);"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-display text-lg font-bold shimmer-text leading-tight">CarWash99</h1>
+                            <p class="text-xs" style="color:var(--text-secondary);">Halo, <span id="userName" class="font-semibold" style="color:var(--gold-light);"></span></p>
+                        </div>
+                    </div>
+                    <button id="logoutBtn" class="px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wide" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text-secondary);cursor:pointer;transition:all 0.3s ease;" onmouseover="this.style.borderColor='rgba(239,68,68,0.3)';this.style.color='#f87171'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='var(--text-secondary)'">
+                        <i class="fas fa-arrow-right-from-bracket mr-1"></i>Keluar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <section class="px-4 mt-5 animate-in animate-delay-1">
+            <div class="flex items-center gap-2 mb-3">
+                <i class="fas fa-bolt" style="color:var(--gold);"></i>
+                <h2 class="font-display text-base font-bold tracking-wide">Transaksi Cepat</h2>
+                <span class="flex-1 h-px" style="background:rgba(212,175,55,0.15);"></span>
+            </div>
+            <div id="transaksiButtons" class="grid grid-cols-2 gap-3">
+                <p class="text-sm col-span-2 text-center py-6" style="color:var(--text-secondary);">Memuat...</p>
+            </div>
+        </section>
+
+        <nav class="px-4 mt-5 animate-in animate-delay-2">
+            <div class="glass-card p-1.5 flex gap-1" style="border-radius:16px;">
+                <button class="tab-luxury active flex-1" data-tab="dashboard"><i class="fas fa-chart-line mr-1.5"></i>Dashboard</button>
+                <button class="tab-luxury flex-1" data-tab="layanan"><i class="fas fa-tags mr-1.5"></i>Layanan</button>
+                <button class="tab-luxury flex-1" data-tab="tukang"><i class="fas fa-users mr-1.5"></i>Tukang</button>
+            </div>
+        </nav>
+
+        <!-- ========= TAB DASHBOARD ========= -->
+        <div id="tabDashboard" class="tab-content px-4 mt-4 space-y-4">
+            <div class="glass-card p-4 animate-in animate-delay-1">
+                <div class="flex justify-between items-center">
+                    <button id="prevDay" class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:var(--text-secondary);cursor:pointer;transition:all 0.3s ease;" onmouseover="this.style.borderColor='rgba(212,175,55,0.3)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='var(--text-secondary)'">
+                        <i class="fas fa-chevron-left text-sm"></i>
+                    </button>
+                    <span id="selectedDate" class="font-semibold text-sm" style="color:var(--gold-light);"></span>
+                    <button id="nextDay" class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:var(--text-secondary);cursor:pointer;transition:all 0.3s ease;" onmouseover="this.style.borderColor='rgba(212,175,55,0.3)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='var(--text-secondary)'">
+                        <i class="fas fa-chevron-right text-sm"></i>
+                    </button>
+                </div>
+                <div class="flex justify-between items-center mt-3">
+                    <button id="todayBtn" class="text-xs font-semibold" style="color:var(--gold);cursor:pointer;background:none;border:none;">Hari Ini</button>
+                    <button onclick="exportToPDF()" class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer" style="background:linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.08));border:1px solid rgba(212,175,55,0.25);color:var(--gold);transition:all 0.3s ease;" onmouseover="this.style.boxShadow='0 0 20px rgba(212,175,55,0.15)'" onmouseout="this.style.boxShadow='none'">
+                        <i class="fas fa-file-pdf mr-1.5"></i>Unduh PDF
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="stat-card animate-in animate-delay-1" style="background:linear-gradient(145deg,rgba(37,99,235,0.12),rgba(29,78,216,0.06));">
+                    <p class="text-xs font-medium mb-2" style="color:var(--text-secondary);"><i class="fas fa-motorcycle mr-1.5" style="color:#60a5fa;"></i>Total Motor</p>
+                    <p class="text-3xl font-bold font-display" style="color:#93c5fd;" id="totalMotor">0</p>
+                </div>
+                <div class="stat-card animate-in animate-delay-2" style="background:linear-gradient(145deg,rgba(16,185,129,0.12),rgba(5,150,105,0.06));">
+                    <p class="text-xs font-medium mb-2" style="color:var(--text-secondary);"><i class="fas fa-car mr-1.5" style="color:#34d399;"></i>Total Mobil</p>
+                    <p class="text-3xl font-bold font-display" style="color:#6ee7b7;" id="totalMobil">0</p>
+                </div>
+                <div class="stat-card animate-in animate-delay-3" style="background:linear-gradient(145deg,rgba(212,175,55,0.12),rgba(201,162,39,0.06));">
+                    <p class="text-xs font-medium mb-2" style="color:var(--text-secondary);"><i class="fas fa-coins mr-1.5" style="color:var(--gold);"></i>Pendapatan Kotor</p>
+                    <p class="text-lg font-bold font-display" style="color:var(--gold-light);" id="pendapatanKotor">Rp0</p>
+                </div>
+                <div class="stat-card animate-in animate-delay-4" style="background:linear-gradient(145deg,rgba(139,92,246,0.12),rgba(109,40,217,0.06));">
+                    <p class="text-xs font-medium mb-2" style="color:var(--text-secondary);"><i class="fas fa-chart-pie mr-1.5" style="color:#a78bfa;"></i>Laba Bersih</p>
+                    <p class="text-lg font-bold font-display" style="color:#c4b5fd;" id="labaBersih">Rp0</p>
+                </div>
+            </div>
+
+            <div class="glass-card p-5 chart-glow">
+                <div class="flex items-center gap-2 mb-4">
+                    <i class="fas fa-chart-area text-sm" style="color:var(--gold);"></i>
+                    <h3 class="font-display text-sm font-bold tracking-wide">Grafik Laba 7 Hari</h3>
+                </div>
+                <div style="height:200px;position:relative;">
+                    <canvas id="profitChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-card p-5">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-money-bill-wave text-sm" style="color:var(--gold);"></i>
+                        <h3 class="font-display text-sm font-bold tracking-wide">Gaji Tukang Cuci</h3>
+                    </div>
+                    <span class="font-bold text-sm shimmer-text" id="totalGajiTukang">Rp0</span>
+                </div>
+                <div id="gajiTukangList" class="max-h-40 overflow-y-auto space-y-0"></div>
+            </div>
+
+            <div class="glass-card p-5">
+                <div class="flex items-center gap-2 mb-4">
+                    <i class="fas fa-receipt text-sm" style="color:var(--gold);"></i>
+                    <h3 class="font-display text-sm font-bold tracking-wide">Transaksi Hari Ini</h3>
+                </div>
+                <div id="transaksiHariIni"></div>
+            </div>
+        </div>
+
+        <!-- ========= TAB LAYANAN ========= -->
+        <div id="tabLayanan" class="tab-content px-4 mt-4" style="display:none;">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-tags text-sm" style="color:var(--gold);"></i>
+                    <h2 class="font-display text-base font-bold tracking-wide">Daftar Layanan Cuci</h2>
+                </div>
+                <button id="tambahLayananBtn" class="btn-gold px-5 py-2.5 rounded-xl text-xs tracking-wide cursor-pointer">
+                    <i class="fas fa-plus mr-1.5"></i>Tambah
+                </button>
+            </div>
+            <div id="layananList" class="space-y-3"></div>
+        </div>
+
+        <!-- ========= TAB TUKANG ========= -->
+        <div id="tabTukang" class="tab-content px-4 mt-4" style="display:none;">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-users text-sm" style="color:var(--gold);"></i>
+                    <h2 class="font-display text-base font-bold tracking-wide">Daftar Tukang Cuci</h2>
+                </div>
+                <button id="tambahTukangBtn" class="btn-gold px-5 py-2.5 rounded-xl text-xs tracking-wide cursor-pointer">
+                    <i class="fas fa-plus mr-1.5"></i>Tambah
+                </button>
+            </div>
+            <div id="tukangList" class="space-y-3"></div>
+        </div>
+
+    </div>
+
+    <!-- ==================== JAVASCRIPT ==================== -->
+    <script type="module">
+        const firebaseConfig = {
+            apiKey: "AIzaSyCFXSdwMp3WaUDGeYj2m4Q-l49TYs_LRR0",
+            authDomain: "carwash-99.firebaseapp.com",
+            projectId: "carwash-99",
+            storageBucket: "carwash-99.firebasestorage.app",
+            messagingSenderId: "617166626443",
+            appId: "1:617166626443:web:b030f30fd51c3b8eb2fe8e"
+        };
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentUser = null;
+        let layananList = [];
+        let tukangList = [];
+        let transaksiList = [];
+        let chartInstance = null;
+        let selectedDate = new Date().toISOString().split('T')[0];
+
+        // ============ PARTIKEL ANIMASI ============
+        function initParticles() {
+            const canvas = document.getElementById('particleCanvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            const PARTICLE_COUNT = 50;
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 0.5,
+                    speedX: (Math.random() - 0.5) * 0.3,
+                    speedY: (Math.random() - 0.5) * 0.3,
+                    opacity: Math.random() * 0.5 + 0.1,
+                    color: Math.random() > 0.7 ? '212,175,55' : '96,165,250'
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.x += p.speedX;
+                    p.y += p.speedY;
+                    if (p.x < 0) p.x = canvas.width;
+                    if (p.x > canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = canvas.height;
+                    if (p.y > canvas.height) p.y = 0;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${p.color},${p.opacity})`;
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${p.color},${p.opacity * 0.1})`;
+                    ctx.fill();
+                });
+
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 120) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = `rgba(96,165,250,${0.06 * (1 - dist / 120)})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        }
+                    }
+                }
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        initParticles();
+
+        // ============ TOAST ============
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            const iconMap = {
+                success: '<i class="fas fa-check-circle mr-2" style="color:#34d399;"></i>',
+                error: '<i class="fas fa-exclamation-circle mr-2" style="color:#f87171;"></i>',
+                info: '<i class="fas fa-info-circle mr-2" style="color:#60a5fa;"></i>'
+            };
+            toast.innerHTML = `${iconMap[type] || iconMap.info}${message}`;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        // ============ CUSTOM MODAL ============
+        function showModal({ icon, title, desc, inputs = [], options = [], confirmText = 'Konfirmasi' }) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('customModal');
+                document.getElementById('modalIcon').innerHTML = icon || '';
+                document.getElementById('modalTitle').textContent = title;
+                document.getElementById('modalDesc').textContent = desc || '';
+
+                const inputsEl = document.getElementById('modalInputs');
+                inputsEl.innerHTML = '';
+                inputs.forEach(inp => {
+                    inputsEl.innerHTML += `<input type="${inp.type || 'text'}" class="lux-input" placeholder="${inp.placeholder}" data-key="${inp.key}" value="${inp.value || ''}">`;
+                });
+
+                const optionsEl = document.getElementById('modalOptions');
+                optionsEl.innerHTML = '';
+                optionsEl.style.display = options.length > 0 ? 'block' : 'none';
+                let selectedIndex = -1;
+                options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-full text-left p-3 rounded-xl text-sm cursor-pointer';
+                    btn.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--text-primary);transition:all 0.3s ease;';
+                    btn.innerHTML = `<span class="inline-block w-6 h-6 rounded-full text-center text-xs leading-6 mr-3" style="background:rgba(212,175,55,0.15);color:var(--gold);font-weight:700;">${idx + 1}</span>${opt.label}`;
+                    btn.onmouseover = () => { btn.style.borderColor = 'rgba(212,175,55,0.4)'; btn.style.background = 'rgba(212,175,55,0.08)'; };
+                    btn.onmouseout = () => { if (selectedIndex !== idx) { btn.style.borderColor = 'rgba(255,255,255,0.08)'; btn.style.background = 'rgba(255,255,255,0.04)'; } };
+                    btn.onclick = () => {
+                        optionsEl.querySelectorAll('button').forEach(b => {
+                            b.style.borderColor = 'rgba(255,255,255,0.08)';
+                            b.style.background = 'rgba(255,255,255,0.04)';
+                        });
+                        btn.style.borderColor = 'rgba(212,175,55,0.5)';
+                        btn.style.background = 'rgba(212,175,55,0.12)';
+                        selectedIndex = idx;
+                    };
+                    optionsEl.appendChild(btn);
+                });
+
+                document.getElementById('modalConfirm').textContent = confirmText;
+                document.getElementById('modalConfirm').onclick = () => {
+                    if (options.length > 0 && selectedIndex === -1) {
+                        showToast('Pilih salah satu opsi terlebih dahulu', 'error');
+                        return;
+                    }
+                    const values = {};
+                    inputsEl.querySelectorAll('input').forEach(inp => {
+                        values[inp.dataset.key] = inp.value;
+                    });
+                    modal.classList.remove('show');
+                    resolve({ values, selectedIndex, selectedOption: options[selectedIndex] || null });
+                };
+                document.getElementById('modalCancel').onclick = () => {
+                    modal.classList.remove('show');
+                    resolve(null);
+                };
+                modal.classList.add('show');
+                setTimeout(() => {
+                    const firstInput = inputsEl.querySelector('input');
+                    if (firstInput) firstInput.focus();
+                }, 300);
+            });
+        }
+
+        // ============ AUTH ============
+        function showAuthScreen() {
+            document.getElementById("authScreen").style.display = "flex";
+            document.getElementById("appScreen").style.display = "none";
+        }
+        function showAppScreen() {
+            document.getElementById("authScreen").style.display = "none";
+            document.getElementById("appScreen").style.display = "block";
+            document.getElementById("userName").textContent = currentUser.email;
+            loadAllData();
+        }
+
+        async function handleLogin(email, password) {
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showToast('Selamat datang kembali!', 'success');
+            } catch (error) {
+                showToast('Login gagal: ' + error.message, 'error');
+            }
+        }
+        async function handleRegister(email, password) {
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                showToast('Registrasi berhasil! Silakan login.', 'success');
+            } catch (error) {
+                showToast('Registrasi gagal: ' + error.message, 'error');
+            }
+        }
+        async function handleLogout() {
+            await signOut(auth);
+            showToast('Berhasil keluar', 'info');
+        }
+
+        // ============ LOAD DATA ============
+        async function loadAllData() {
+            if (!currentUser) return;
+            await loadLayanan();
+            await loadTukang();
+            await loadTransaksi();
+            renderDashboard();
+            renderLayananList();
+            renderTukangList();
+            renderTransaksiButtons();
+        }
+        async function loadLayanan() {
+            const snapshot = await getDocs(collection(db, "users", currentUser.uid, "layanan"));
+            layananList = [];
+            snapshot.forEach(d => layananList.push({ id: d.id, ...d.data() }));
+        }
+        async function loadTukang() {
+            const snapshot = await getDocs(collection(db, "users", currentUser.uid, "tukang"));
+            tukangList = [];
+            snapshot.forEach(d => tukangList.push({ id: d.id, ...d.data() }));
+        }
+        async function loadTransaksi() {
+            const q = query(collection(db, "users", currentUser.uid, "transaksi"));
+            const snapshot = await getDocs(q);
+            transaksiList = [];
+            snapshot.forEach(d => transaksiList.push({ id: d.id, ...d.data() }));
+        }
+
+        // ============ STATISTIK ============
+        function getStatsByDate(date) {
+            const th = transaksiList.filter(t => t.tanggal === date);
+            let totalMotor = 0, totalMobil = 0, pendapatanKotor = 0, totalJasaTukang = 0;
+            th.forEach(t => {
+                pendapatanKotor += t.harga;
+                totalJasaTukang += t.jasaTukang;
+                if (t.namaLayanan.toLowerCase().includes("motor")) totalMotor++;
+                if (t.namaLayanan.toLowerCase().includes("mobil")) totalMobil++;
+            });
+            return { totalMotor, totalMobil, pendapatanKotor, totalJasaTukang, labaBersih: pendapatanKotor - totalJasaTukang, totalTransaksi: th.length, transaksiHari: th };
+        }
+        function getGajiTukang() {
+            let m = {};
+            transaksiList.forEach(t => {
+                if (!m[t.namaTukang]) m[t.namaTukang] = 0;
+                m[t.namaTukang] += t.jasaTukang;
+            });
+            return m;
+        }
+        function getWeeklyData() {
+            let wd = {};
+            for (let i = 6; i >= 0; i--) {
+                let d = new Date(); d.setDate(d.getDate() - i);
+                let ds = d.toISOString().split('T')[0];
+                wd[ds] = getStatsByDate(ds).labaBersih;
+            }
+            return wd;
+        }
+
+        // ============ EXPORT PDF ============
+        window.exportToPDF = function() {
+            const stats = getStatsByDate(selectedDate);
+            const gajiMap = getGajiTukang();
+            let gajiHtml = "";
+            for (let [n, j] of Object.entries(gajiMap)) {
+                gajiHtml += `<tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#374151;">${n}</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;color:#065f46;">Rp${j.toLocaleString()}</td></tr>`;
+            }
+            if (!gajiHtml) gajiHtml = "<tr><td colspan='2' style='padding:14px;text-align:center;color:#9ca3af;'>Belum ada transaksi</td></tr>";
+            let trHtml = "";
+            stats.transaksiHari.forEach(t => {
+                trHtml += `<tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#374151;">${t.namaLayanan}</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;color:#1e40af;">Rp${t.harga.toLocaleString()}</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#374151;">${t.namaTukang}</td></tr>`;
+            });
+            if (!trHtml) trHtml = "<tr><td colspan='3' style='padding:14px;text-align:center;color:#9ca3af;'>Belum ada transaksi</td></tr>";
+            const pdfContent = `
+                <div style="font-family:'Segoe UI',Arial,sans-serif;padding:30px;max-width:800px;margin:0 auto;color:#1f2937;">
+                    <div style="text-align:center;margin-bottom:30px;">
+                        <h1 style="color:#0d1b3e;margin:0 0 4px;font-size:28px;font-weight:800;">CarWash99</h1>
+                        <p style="color:#6b7280;margin:0 0 4px;font-size:14px;letter-spacing:2px;">PREMIUM CAR WASH MANAGEMENT</p>
+                        <div style="width:60px;height:3px;background:linear-gradient(90deg,#d4af37,#f0c040);margin:12px auto;border-radius:2px;"></div>
+                        <h2 style="color:#0d1b3e;margin:0 0 4px;font-size:20px;">Laporan Harian</h2>
+                        <p style="color:#6b7280;margin:0;font-size:13px;">Tanggal: ${selectedDate}</p>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:28px;">
+                        <div style="background:#eff6ff;padding:18px;border-radius:14px;text-align:center;border:1px solid #dbeafe;">
+                            <p style="color:#2563eb;font-size:12px;margin:0 0 6px;font-weight:600;">TOTAL MOTOR</p>
+                            <p style="font-size:32px;font-weight:800;color:#1e40af;margin:0;">${stats.totalMotor}</p>
+                        </div>
+                        <div style="background:#f0fdf4;padding:18px;border-radius:14px;text-align:center;border:1px solid #d1fae5;">
+                            <p style="color:#059669;font-size:12px;margin:0 0 6px;font-weight:600;">TOTAL MOBIL</p>
+                            <p style="font-size:32px;font-weight:800;color:#065f46;margin:0;">${stats.totalMobil}</p>
+                        </div>
+                        <div style="background:#fffbeb;padding:18px;border-radius:14px;text-align:center;border:1px solid #fde68a;">
+                            <p style="color:#b45309;font-size:12px;margin:0 0 6px;font-weight:600;">PENDAPATAN KOTOR</p>
+                            <p style="font-size:20px;font-weight:800;color:#92400e;margin:0;">Rp${stats.pendapatanKotor.toLocaleString()}</p>
+                        </div>
+                        <div style="background:#f5f3ff;padding:18px;border-radius:14px;text-align:center;border:1px solid #ede9fe;">
+                            <p style="color:#7c3aed;font-size:12px;margin:0 0 6px;font-weight:600;">LABA BERSIH</p>
+                            <p style="font-size:20px;font-weight:800;color:#5b21b6;margin:0;">Rp${stats.labaBersih.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div style="margin-bottom:28px;">
+                        <h3 style="font-size:15px;font-weight:700;margin:0 0 12px;color:#0d1b3e;">Rincian Gaji Tukang Cuci</h3>
+                        <table style="width:100%;border-collapse:collapse;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+                            <thead><tr style="background:#f8fafc;"><th style="padding:12px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;">Nama Tukang</th><th style="padding:12px 14px;text-align:right;font-size:12px;color:#6b7280;font-weight:600;">Total Gaji</th></tr></thead>
+                            <tbody>${gajiHtml}</tbody>
+                        </table>
+                        <div style="text-align:right;margin-top:10px;padding:12px 16px;background:#f8fafc;border-radius:10px;"><strong style="color:#0d1b3e;">Total Gaji: Rp${Object.values(gajiMap).reduce((a,b)=>a+b,0).toLocaleString()}</strong></div>
+                    </div>
+                    <div>
+                        <h3 style="font-size:15px;font-weight:700;margin:0 0 12px;color:#0d1b3e;">Daftar Transaksi Cuci</h3>
+                        <table style="width:100%;border-collapse:collapse;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+                            <thead><tr style="background:#f8fafc;"><th style="padding:12px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;">Layanan</th><th style="padding:12px 14px;text-align:right;font-size:12px;color:#6b7280;font-weight:600;">Harga</th><th style="padding:12px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;">Tukang</th></tr></thead>
+                            <tbody>${trHtml}</tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:30px;text-align:center;color:#9ca3af;font-size:11px;border-top:1px solid #e5e7eb;padding-top:14px;">Laporan dari CarWash99 Premium | ${new Date().toLocaleString()}</div>
+                </div>
+            `;
+            html2pdf().set({
+                margin: [0.5, 0.5, 0.5, 0.5],
+                filename: `Laporan_CarWash99_${selectedDate}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            }).from(pdfContent).save();
+            showToast('PDF berhasil diunduh', 'success');
+        };
+
+        // ============ RENDER DASHBOARD ============
+        function renderDashboard() {
+            const stats = getStatsByDate(selectedDate);
+            const gajiMap = getGajiTukang();
+
+            document.getElementById("totalMotor").innerHTML = `<i class="fas fa-motorcycle mr-1.5 text-sm" style="color:#60a5fa;"></i>${stats.totalMotor}`;
+            document.getElementById("totalMobil").innerHTML = `<i class="fas fa-car mr-1.5 text-sm" style="color:#34d399;"></i>${stats.totalMobil}`;
+            document.getElementById("pendapatanKotor").innerHTML = `<span style="font-size:11px;opacity:0.7;">Rp</span>${stats.pendapatanKotor.toLocaleString()}`;
+            document.getElementById("labaBersih").innerHTML = `<span style="font-size:11px;opacity:0.7;">Rp</span>${stats.labaBersih.toLocaleString()}`;
+
+            let gajiHtml = "";
+            for (let [nama, jumlah] of Object.entries(gajiMap)) {
+                gajiHtml += `
+                    <div class="flex justify-between items-center py-3" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style="background:rgba(212,175,55,0.12);color:var(--gold);">${nama.charAt(0).toUpperCase()}</div>
+                            <span class="font-medium text-sm">${nama}</span>
+                        </div>
+                        <span class="font-semibold text-sm" style="color:#6ee7b7;">Rp${jumlah.toLocaleString()}</span>
+                    </div>`;
+            }
+            if (!gajiHtml) gajiHtml = `<p class="text-sm text-center py-4" style="color:var(--text-secondary);">Belum ada transaksi</p>`;
+            document.getElementById("gajiTukangList").innerHTML = gajiHtml;
+            document.getElementById("totalGajiTukang").textContent = `Rp${Object.values(gajiMap).reduce((a,b)=>a+b,0).toLocaleString()}`;
+
+            const weeklyData = getWeeklyData();
+            const labels = Object.keys(weeklyData);
+            const data = Object.values(weeklyData);
+            if (chartInstance) chartInstance.destroy();
+            const ctx = document.getElementById("profitChart").getContext("2d");
+            const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.25)');
+            gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.map(d => d.slice(5)),
+                    datasets: [{
+                        label: 'Laba Bersih',
+                        data: data,
+                        borderColor: '#d4af37',
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2.5,
+                        pointBackgroundColor: '#d4af37',
+                        pointBorderColor: '#0d1b3e',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(13, 27, 62, 0.95)',
+                            borderColor: 'rgba(212, 175, 55, 0.3)',
+                            borderWidth: 1,
+                            titleColor: '#d4af37',
+                            bodyColor: '#f0f4ff',
+                            padding: 12,
+                            cornerRadius: 12,
+                            callbacks: { label: ctx => `Rp${ctx.parsed.y.toLocaleString()}` }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
+                            ticks: { color: 'rgba(139,163,204,0.5)', font: { size: 11 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
+                            ticks: {
+                                color: 'rgba(139,163,204,0.5)',
+                                font: { size: 11 },
+                                callback: v => 'Rp' + (v >= 1000 ? (v/1000)+'k' : v)
+                            }
+                        }
+                    }
+                }
+            });
+
+            let trHtml = "";
+            if (stats.transaksiHari.length === 0) {
+                trHtml = `<p class="text-sm text-center py-4" style="color:var(--text-secondary);">Belum ada transaksi hari ini</p>`;
+            } else {
+                stats.transaksiHari.forEach(t => {
+                    trHtml += `
+                        <div class="flex justify-between items-center py-3" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs" style="background:rgba(59,130,246,0.12);color:#60a5fa;"><i class="fas fa-spray-can-sparkles"></i></div>
+                                <div>
+                                    <span class="font-medium text-sm">${t.namaLayanan}</span>
+                                    <span class="text-xs ml-1.5" style="color:var(--text-secondary);">${t.namaTukang}</span>
+                                </div>
+                            </div>
+                            <span class="font-semibold text-sm" style="color:var(--gold-light);">Rp${t.harga.toLocaleString()}</span>
+                        </div>`;
+                });
+            }
+            document.getElementById("transaksiHariIni").innerHTML = trHtml;
+            document.getElementById("selectedDate").innerHTML = `<i class="fas fa-calendar-day mr-2 text-xs"></i>${selectedDate}`;
+        }
+
+        // ============ RENDER LAYANAN ============
+        function renderLayananList() {
+            const container = document.getElementById("layananList");
+            if (!container) return;
+            if (layananList.length === 0) {
+                container.innerHTML = `<div class="glass-card p-8 text-center"><i class="fas fa-tags text-3xl mb-3" style="color:rgba(212,175,55,0.2);"></i><p class="text-sm" style="color:var(--text-secondary);">Belum ada layanan cuci. Tambahkan layanan dulu.</p></div>`;
+                return;
+            }
+            container.innerHTML = layananList.map((l, i) => `
+                <div class="glass-card p-4 flex justify-between items-center animate-in" style="animation-delay:${i * 0.05}s;">
+                    <div>
+                        <p class="font-bold text-base mb-1">${l.nama}</p>
+                        <div class="flex gap-4 text-xs" style="color:var(--text-secondary);">
+                            <span>Harga: <span style="color:#6ee7b7;font-weight:600;">Rp${l.harga.toLocaleString()}</span></span>
+                            <span>Jasa: <span style="color:var(--gold);font-weight:600;">Rp${l.jasaTukang.toLocaleString()}</span></span>
+                        </div>
+                    </div>
+                    <button onclick="hapusLayanan('${l.id}')" class="btn-delete"><i class="fas fa-trash-alt text-sm"></i></button>
+                </div>
+            `).join('');
+        }
+
+        // ============ RENDER TRANSAKSI BUTTONS ============
+        function renderTransaksiButtons() {
+            const container = document.getElementById("transaksiButtons");
+            if (!container) return;
+            if (layananList.length === 0) {
+                container.innerHTML = `<div class="glass-card p-6 col-span-2 text-center"><p class="text-sm" style="color:var(--text-secondary);">Tambahkan layanan cuci dulu untuk mulai transaksi</p></div>`;
+                return;
+            }
+            if (tukangList.length === 0) {
+                container.innerHTML = `<div class="glass-card p-6 col-span-2 text-center"><i class="fas fa-exclamation-triangle mr-2" style="color:var(--gold);"></i><span class="text-sm" style="color:var(--gold);">Tambahkan tukang cuci dulu</span></div>`;
+                return;
+            }
+            const icons = ['fa-motorcycle', 'fa-car', 'fa-spray-can-sparkles', 'fa-shower', 'fa-hand-sparkles', 'fa-pump-soap'];
+            container.innerHTML = layananList.map((l, i) => `
+                <button onclick="pilihLayanan('${l.id}', '${l.nama}', ${l.harga}, ${l.jasaTukang})" class="transaksi-btn">
+                    <i class="fas ${icons[i % icons.length]} text-xl mb-2" style="color:var(--gold);"></i>
+                    <p class="font-bold text-sm mb-1">${l.nama}</p>
+                    <p class="text-xs font-semibold" style="color:var(--gold-light);">Rp${l.harga.toLocaleString()}</p>
+                </button>
+            `).join('');
+        }
+
+        // ============ PILIH LAYANAN ============
+        window.pilihLayanan = async function(layananId, nama, harga, jasaTukang) {
+            const options = tukangList.map(t => ({ label: t.nama, id: t.id, nama: t.nama }));
+            const result = await showModal({
+                icon: '<i class="fas fa-hand-pointer" style="color:var(--gold);"></i>',
+                title: nama,
+                desc: `Harga: Rp${harga.toLocaleString()} | Pilih tukang cuci:`,
+                options: options,
+                confirmText: 'Catat Transaksi'
+            });
+            if (result) {
+                catatTransaksi(layananId, nama, harga, jasaTukang, result.selectedOption.id, result.selectedOption.nama);
+            }
+        };
+
+        async function catatTransaksi(layananId, namaLayanan, harga, jasaTukang, tukangId, namaTukang) {
+            if (!currentUser) return;
+            try {
+                await addDoc(collection(db, "users", currentUser.uid, "transaksi"), {
+                    layananId, namaLayanan, harga, jasaTukang, tukangId, namaTukang,
+                    tanggal: new Date().toISOString().split('T')[0],
+                    timestamp: Timestamp.now()
+                });
+                showToast(`Transaksi ${namaLayanan} berhasil dicatat!`, 'success');
+                await loadAllData();
+                renderDashboard();
+            } catch (error) {
+                showToast('Gagal mencatat transaksi: ' + error.message, 'error');
+            }
+        }
+
+        window.hapusLayanan = async function(id) {
+            const result = await showModal({
+                icon: '<i class="fas fa-trash-alt" style="color:#f87171;"></i>',
+                title: 'Hapus Layanan?',
+                desc: 'Data yang dihapus tidak dapat dikembalikan.',
+                confirmText: 'Ya, Hapus'
+            });
+            if (result) {
+                try {
+                    await deleteDoc(doc(db, "users", currentUser.uid, "layanan", id));
+                    showToast('Layanan berhasil dihapus', 'info');
+                    loadAllData();
+                } catch (e) {
+                    showToast('Gagal menghapus: ' + e.message, 'error');
+                }
+            }
+        };
+
+        window.hapusTukang = async function(id) {
+            const result = await showModal({
+                icon: '<i class="fas fa-user-minus" style="color:#f87171;"></i>',
+                title: 'Hapus Tukang Cuci?',
+                desc: 'Data yang dihapus tidak dapat dikembalikan.',
+                confirmText: 'Ya, Hapus'
+            });
+            if (result) {
+                try {
+                    await deleteDoc(doc(db, "users", currentUser.uid, "tukang", id));
+                    showToast('Tukang cuci berhasil dihapus', 'info');
+                    loadAllData();
+                } catch (e) {
+                    showToast('Gagal menghapus: ' + e.message, 'error');
+                }
+            }
+        };
+
+        async function tambahLayanan(nama, harga, jasaTukang) {
+            if (!currentUser) return;
+            await addDoc(collection(db, "users", currentUser.uid, "layanan"), {
+                nama, harga: parseInt(harga), jasaTukang: parseInt(jasaTukang),
+                createdAt: Timestamp.now()
+            });
+            showToast(`Layanan "${nama}" berhasil ditambahkan!`, 'success');
+            loadAllData();
+        }
+
+        async function tambahTukang(nama) {
+            if (!currentUser) return;
+            await addDoc(collection(db, "users", currentUser.uid, "tukang"), {
+                nama, aktif: true,
+                tanggalGabung: new Date().toISOString().split('T')[0]
+            });
+            showToast(`Tukang cuci "${nama}" berhasil ditambahkan!`, 'success');
+            loadAllData();
+        }
+
+        function renderTukangList() {
+            const container = document.getElementById("tukangList");
+            if (!container) return;
+            if (tukangList.length === 0) {
+                container.innerHTML = `<div class="glass-card p-8 text-center"><i class="fas fa-users text-3xl mb-3" style="color:rgba(212,175,55,0.2);"></i><p class="text-sm" style="color:var(--text-secondary);">Belum ada tukang cuci. Tambahkan tukang dulu.</p></div>`;
+                return;
+            }
+            container.innerHTML = tukangList.map((t, i) => `
+                <div class="glass-card p-4 flex justify-between items-center animate-in" style="animation-delay:${i * 0.05}s;">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm" style="background:linear-gradient(135deg,rgba(37,99,235,0.2),rgba(212,175,55,0.15));border:1px solid rgba(212,175,55,0.15);color:var(--gold);">${t.nama.charAt(0).toUpperCase()}</div>
+                        <div>
+                            <p class="font-bold text-base">${t.nama}</p>
+                            <p class="text-xs" style="color:var(--text-secondary);">Bergabung: ${t.tanggalGabung}</p>
+                        </div>
+                    </div>
+                    <button onclick="hapusTukang('${t.id}')" class="btn-delete"><i class="fas fa-trash-alt text-sm"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function changeDate(days) {
+            let d = new Date(selectedDate);
+            d.setDate(d.getDate() + days);
+            selectedDate = d.toISOString().split('T')[0];
+            renderDashboard();
+        }
+
+        // ============ EVENT LISTENERS ============
+        function initEventListeners() {
+            document.getElementById("loginBtn").onclick = () => {
+                const email = document.getElementById("loginEmail").value.trim();
+                const password = document.getElementById("loginPassword").value;
+                if (!email || !password) { showToast('Masukkan email dan password', 'error'); return; }
+                handleLogin(email, password);
+            };
+            document.getElementById("registerBtn").onclick = () => {
+                const email = document.getElementById("registerEmail").value.trim();
+                const password = document.getElementById("registerPassword").value;
+                if (!email || !password) { showToast('Masukkan email dan password', 'error'); return; }
+                if (password.length < 6) { showToast('Password minimal 6 karakter', 'error'); return; }
+                handleRegister(email, password);
+            };
+            document.getElementById("logoutBtn").onclick = handleLogout;
+
+            document.getElementById("tambahLayananBtn").onclick = async () => {
+                const result = await showModal({
+                    icon: '<i class="fas fa-plus-circle" style="color:var(--gold);"></i>',
+                    title: 'Tambah Layanan Cuci',
+                    desc: 'Masukkan detail layanan cuci',
+                    inputs: [
+                        { key: 'nama', placeholder: 'Nama layanan (cth: Cuci Motor)', value: '' },
+                        { key: 'harga', placeholder: 'Harga untuk konsumen (cth: 15000)', value: '', type: 'number' },
+                        { key: 'jasa', placeholder: 'Jasa untuk tukang cuci (cth: 5000)', value: '', type: 'number' }
+                    ],
+                    confirmText: 'Tambah Layanan'
+                });
+                if (result && result.values.nama && result.values.harga && result.values.jasa) {
+                    tambahLayanan(result.values.nama, result.values.harga, result.values.jasa);
+                } else if (result) {
+                    showToast('Semua field harus diisi', 'error');
+                }
+            };
+
+            document.getElementById("tambahTukangBtn").onclick = async () => {
+                const result = await showModal({
+                    icon: '<i class="fas fa-user-plus" style="color:var(--gold);"></i>',
+                    title: 'Tambah Tukang Cuci',
+                    desc: 'Masukkan nama tukang cuci',
+                    inputs: [
+                        { key: 'nama', placeholder: 'Nama tukang cuci', value: '' }
+                    ],
+                    confirmText: 'Tambah Tukang'
+                });
+                if (result && result.values.nama) {
+                    tambahTukang(result.values.nama);
+                } else if (result) {
+                    showToast('Nama tukang cuci harus diisi', 'error');
+                }
+            };
+
+            document.getElementById("prevDay").onclick = () => changeDate(-1);
+            document.getElementById("nextDay").onclick = () => changeDate(1);
+            document.getElementById("todayBtn").onclick = () => {
+                selectedDate = new Date().toISOString().split('T')[0];
+                renderDashboard();
+            };
+
+            ['loginEmail', 'loginPassword'].forEach(id => {
+                document.getElementById(id).addEventListener('keydown', e => {
+                    if (e.key === 'Enter') document.getElementById('loginBtn').click();
+                });
+            });
+            ['registerEmail', 'registerPassword'].forEach(id => {
+                document.getElementById(id).addEventListener('keydown', e => {
+                    if (e.key === 'Enter') document.getElementById('registerBtn').click();
+                });
+            });
+        }
+
+        function initTabs() {
+            document.querySelectorAll('.tab-luxury').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabName = btn.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                    document.getElementById(`tab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).style.display = 'block';
+                    document.querySelectorAll('.tab-luxury').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    if (tabName === 'dashboard') renderDashboard();
+                });
+            });
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) { showAppScreen(); } else { showAuthScreen(); }
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            initEventListeners();
+            initTabs();
+        });
+    </script>
+</body>
+  </html>

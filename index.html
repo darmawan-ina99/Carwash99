@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarWash99 - Aktivasi Lisensi</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #030810, #0a1128);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .card {
+            background: rgba(13, 27, 62, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 28px;
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #d4af37;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #8ba3cc;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            color: white;
+            font-size: 16px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        input:focus {
+            outline: none;
+            border-color: #d4af37;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #c9a227, #d4af37);
+            border: none;
+            border-radius: 16px;
+            color: #040a1a;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212,175,55,0.3);
+        }
+        .error {
+            color: #f87171;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .success {
+            color: #34d399;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card" id="licenseCard">
+    <div style="font-size: 60px;">🔑</div>
+    <h1>Aktivasi Lisensi</h1>
+    <p>Masukkan kode lisensi dan email Anda</p>
+    
+    <input type="text" id="licenseKey" placeholder="Kode Lisensi" autocomplete="off">
+    <input type="email" id="licenseEmail" placeholder="Email Anda">
+    
+    <button id="activateBtn">AKTIVASI LISENSI</button>
+    
+    <div id="message" class="error hidden"></div>
+</div>
+
+<div class="card" id="appCard" style="display: none;">
+    <div style="font-size: 60px;">🧼</div>
+    <h1>CarWash99</h1>
+    <p>Selamat! Lisensi Anda valid.</p>
+    <p style="font-size: 12px; color: #34d399;">✅ Aplikasi siap digunakan</p>
+    <button id="continueBtn" style="margin-top: 20px;">LANJUT KE APLIKASI</button>
+</div>
+
+<script>
+    // ==================== DAFTAR LISENSI VALID ====================
+    const VALID_LICENSES = [
+        "CARWASH-2024-001A-B5F7",
+        "CARWASH-2024-002B-C6G8",
+        "CARWASH-2024-003C-D7H9",
+        "DEMO-2024-ABCD-0001"
+    ];
+    
+    // Ambil elemen
+    const licenseCard = document.getElementById('licenseCard');
+    const appCard = document.getElementById('appCard');
+    const activateBtn = document.getElementById('activateBtn');
+    const continueBtn = document.getElementById('continueBtn');
+    const licenseKeyInput = document.getElementById('licenseKey');
+    const licenseEmailInput = document.getElementById('licenseEmail');
+    const messageDiv = document.getElementById('message');
+    
+    // Fungsi validasi
+    function validateLicense(key, email) {
+        if (!key || !email) {
+            return { valid: false, message: "Isi kode lisensi dan email!" };
+        }
+        
+        if (VALID_LICENSES.includes(key.toUpperCase())) {
+            // Simpan ke localStorage
+            localStorage.setItem('carwash99_license_key', key);
+            localStorage.setItem('carwash99_license_email', email);
+            localStorage.setItem('carwash99_license_date', new Date().toISOString());
+            return { valid: true, message: "✅ Lisensi valid! Mengalihkan..." };
+        } else {
+            return { valid: false, message: "❌ Kode lisensi tidak valid!" };
+        }
+    }
+    
+    // Fungsi cek lisensi tersimpan
+    function checkSavedLicense() {
+        const savedKey = localStorage.getItem('carwash99_license_key');
+        const savedEmail = localStorage.getItem('carwash99_license_email');
+        
+        if (savedKey && VALID_LICENSES.includes(savedKey)) {
+            // Lisensi valid, langsung tampilkan aplikasi
+            licenseCard.style.display = 'none';
+            appCard.style.display = 'block';
+            return true;
+        }
+        return false;
+    }
+    
+    // Event tombol aktivasi
+    activateBtn.onclick = function() {
+        const key = licenseKeyInput.value.trim();
+        const email = licenseEmailInput.value.trim();
+        
+        const result = validateLicense(key, email);
+        
+        if (result.valid) {
+            messageDiv.className = 'success';
+            messageDiv.textContent = result.message;
+            messageDiv.classList.remove('hidden');
+            
+            // Tampilkan aplikasi setelah 1 detik
+            setTimeout(function() {
+                licenseCard.style.display = 'none';
+                appCard.style.display = 'block';
+            }, 1000);
+        } else {
+            messageDiv.className = 'error';
+            messageDiv.textContent = result.message;
+            messageDiv.classList.remove('hidden');
+        }
+    };
+    
+    // Enter key support
+    licenseKeyInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') activateBtn.click();
+    });
+    licenseEmailInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') activateBtn.click();
+    });
+    
+    // Tombol lanjut ke aplikasi utama
+    continueBtn.onclick = function() {
+        // Redirect ke aplikasi utama (ganti dengan URL aplikasi Anda)
+        window.location.href = 'https://carwash99-jade.vercel.app/main.html';
+        // Atau jika dalam satu file, panggil fungsi loadMainApp
+        alert('Aplikasi utama akan dimuat. Lanjutkan ke halaman login.');
+    };
+    
+    // Cek lisensi saat halaman dimuat
+    checkSavedLicense();
+</script>
+
+</body>
+</html>

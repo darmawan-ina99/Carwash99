@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CarWash99 - Manajemen Cucian Premium</title>
+    <meta name="description" content="Aplikasi manajemen cuci mobil premium dengan multi-level user">
+    <meta name="theme-color" content="#040a1a">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --bg-deep: #030810;
+            --bg-card: rgba(10, 22, 50, 0.5);
+            --border-glass: rgba(255, 255, 255, 0.06);
+            --border-gold: rgba(212, 175, 55, 0.3);
+            --gold: #d4af37;
+            --gold-light: #f0c040;
+            --text-primary: #eef2ff;
+            --text-secondary: #7b96c4;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        .font-display { font-family: 'Playfair Display', serif; }
+
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.2); border-radius: 10px; }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 1;
+            opacity: 0.5;
+        }
+
+        #particleCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+        .mesh-bg {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background:
+                radial-gradient(ellipse 600px 400px at 15% 20%, rgba(37,99,235,0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 500px 500px at 85% 80%, rgba(212,175,55,0.08) 0%, transparent 70%),
+                radial-gradient(ellipse 400px 300px at 50% 50%, rgba(139,92,246,0.05) 0%, transparent 70%);
+            animation: meshShift 20s ease-in-out infinite alternate;
+        }
+        @keyframes meshShift {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(1deg); }
+            100% { transform: scale(1) rotate(-1deg); }
+        }
+
+        .glow-orb {
+            position: fixed; border-radius: 50%;
+            filter: blur(100px); pointer-events: none; z-index: 0;
+            animation: orbFloat 22s ease-in-out infinite;
+        }
+        .glow-orb.a { width: 450px; height: 450px; background: #2563eb; top: -150px; left: -150px; opacity: 0.1; }
+        .glow-orb.b { width: 380px; height: 380px; background: #d4af37; bottom: -120px; right: -120px; opacity: 0.08; }
+        .glow-orb.c { width: 250px; height: 250px; background: #7c3aed; top: 40%; left: 55%; opacity: 0.06; }
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(40px, -50px) scale(1.12); }
+            50% { transform: translate(-30px, 30px) scale(0.92); }
+            75% { transform: translate(50px, 40px) scale(1.06); }
+        }
+
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(28px);
+            border: 1px solid var(--border-glass);
+            border-radius: 22px;
+            transition: all 0.45s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+        }
+        .glass-card:hover {
+            border-color: rgba(212, 175, 55, 0.12);
+            box-shadow: 0 12px 48px rgba(59, 130, 246, 0.06);
+            transform: translateY(-1px);
+        }
+
+        .gold-border { border: 1px solid var(--border-gold); }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #f0c040 100%);
+            color: #040a1a;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.35s ease;
+        }
+        .btn-gold:hover { box-shadow: 0 8px 35px rgba(212, 175, 55, 0.4); transform: translateY(-2px); }
+
+        .btn-blue {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #2563eb 100%);
+            color: #fff;
+            font-weight: 600;
+            border: 1px solid rgba(96, 165, 250, 0.15);
+            cursor: pointer;
+            transition: all 0.35s ease;
+        }
+        .btn-blue:hover { box-shadow: 0 8px 35px rgba(37, 99, 235, 0.4); transform: translateY(-2px); }
+
+        .btn-wa {
+            background: linear-gradient(135deg, #075e54 0%, #128c7e 100%);
+            color: white;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.35s ease;
+        }
+        .btn-wa:hover { box-shadow: 0 8px 35px rgba(18, 140, 126, 0.4); transform: translateY(-2px); }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.35s ease;
+        }
+        .btn-success:hover { box-shadow: 0 8px 35px rgba(16, 185, 129, 0.4); transform: translateY(-2px); }
+
+        .lux-input {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 15px 20px;
+            color: var(--text-primary);
+            font-size: 15px;
+            width: 100%;
+            outline: none;
+            transition: all 0.35s ease;
+        }
+        .lux-input::placeholder { color: rgba(123, 150, 196, 0.4); }
+        .lux-input:focus {
+            border-color: rgba(212, 175, 55, 0.5);
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.06);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tabs-container {
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            padding-bottom: 4px;
+        }
+        .tabs-container::-webkit-scrollbar { height: 2px; }
+        .tabs-container::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .tabs-container::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.3); border-radius: 10px; }
+        
+        .tab-luxury {
+            display: inline-flex;
+            padding: 8px 12px;
+            font-weight: 600;
+            font-size: 11px;
+            color: var(--text-secondary);
+            border-radius: 12px;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            transition: all 0.35s ease;
+            white-space: nowrap;
+        }
+        .tab-luxury.active {
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.08);
+            border: 1px solid rgba(212, 175, 55, 0.18);
+        }
+        .tab-luxury:not(.active):hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        /* Staff mode - hide edit buttons */
+        body.staff-mode .btn-edit, 
+        body.staff-mode .btn-delete, 
+        body.staff-mode .admin-only {
+            display: none !important;
+        }
+        
+        body.staff-mode .tab-luxury[data-tab="layanan"],
+        body.staff-mode .tab-luxury[data-tab="tukang"],
+        body.staff-mode .tab-luxury[data-tab="biaya"],
+        body.staff-mode .tab-luxury[data-tab="laporanTukang"],
+        body.staff-mode .tab-luxury[data-tab="pengaturan"],
+        body.staff-mode .tab-luxury[data-tab="leaderboard"] {
+            display: none !important;
+        }
+
+        .role-badge {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 9px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(3, 8, 16, 0.95);
+            backdrop-filter: blur(16px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.35s ease;
+        }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        .modal-box {
+            background: linear-gradient(155deg, #0d1b3e 0%, #060e22 100%);
+            border: 1px solid rgba(212, 175, 55, 0.18);
+            border-radius: 28px;
+            padding: 24px;
+            max-width: 420px;
+            width: 100%;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.show .modal-box { transform: scale(1); }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: linear-gradient(135deg, #0d1b3e, #132456);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 18px;
+            padding: 14px 22px;
+            color: var(--text-primary);
+            font-size: 13px;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+        }
+        .toast.show { transform: translateX(0); }
+
+        .gold-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212,175,55,0.35), transparent);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 9px;
+            font-weight: 600;
+        }
+        .status-available { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .status-busy { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .status-progress { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+        .progress-item { position: relative; overflow: hidden; }
+        .progress-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--gold);
+            border-radius: 3px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+            #particleCanvas { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mesh-bg"></div>
+    <canvas id="particleCanvas"></canvas>
+    <div class="glow-orb a"></div>
+    <div class="glow-orb b"></div>
+    <div class="glow-orb c"></div>
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ==================== LAYAR LISENSI ==================== -->
+    <div id="licenseScreen" class="min-h-screen flex items-center justify-center p-4 relative z-10">
+        <div class="glass-card gold-border p-8 max-w-md w-full">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-24 h-24 rounded-full mb-5" style="background:linear-gradient(135deg,rgba(37,99,235,0.15),rgba(212,175,55,0.12));border:2px solid rgba(212,175,55,0.2);">
+                    <i class="fas fa-key text-4xl" style="color:var(--gold);"></i>
+                </div>
+                <h1 class="font-display text-3xl font-black mb-2" style="background:linear-gradient(135deg,var(--gold),#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Aktivasi Lisensi</h1>
+                <p class="text-xs tracking-wide uppercase" style="color:var(--text-secondary);">Masukkan kode lisensi Anda</p>
+            </div>
+            <div class="mb-6">
+                <input type="text" id="licenseKey" placeholder="XXXX-XXXX-XXXX-XXXX" class="lux-input text-center text-lg tracking-wider uppercase" autocomplete="off" style="letter-spacing: 2px;">
+                <div id="licenseError" class="text-xs text-red-400 mt-2 text-center hidden"></div>
+            </div>
+            <button id="activateLicenseBtn" class="btn-gold w-full py-4 rounded-xl font-semibold text-sm tracking-wide">
+                <i class="fas fa-unlock-alt mr-2"></i>AKTIVASI LISENSI
+            </button>
+            <div class="mt-6 text-center">
+                <p class="text-[10px]" style="color:rgba(139,163,204,0.4);">
+                    <i class="fas fa-shield-alt mr-1"></i> Lisensi ini untuk penggunaan satu usaha
+                </p>
+                <p class="text-[10px] mt-2" style="color:rgba(139,163,204,0.3);">
+                    Butuh lisensi? Hubungi: <span id="supportContact" style="color:var(--gold);">0821-2345-6789</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== LAYAR APLIKASI UTAMA ==================== -->
+    <div id="appScreen" class="max-w-md mx-auto pb-24 relative z-10" style="display:none;">
+        
+        <!-- Header -->
+        <header class="sticky top-0 z-50 px-3 pt-3 pb-0">
+            <div class="glass-card gold-border p-3" style="border-radius:0 0 20px 20px;border-top:none;">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:linear-gradient(135deg,rgba(212,175,55,0.18),rgba(37,99,235,0.15));border:1px solid rgba(212,175,55,0.15);">
+                            <i class="fas fa-car-side" style="color:var(--gold);font-size:16px;"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-display text-base font-bold" style="background:linear-gradient(135deg,var(--gold),#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;" id="headerNamaUsaha">CarWash99</h1>
+                            <p class="text-[10px]" style="color:var(--text-secondary);">
+                                Halo, <span id="userName" class="font-semibold" style="color:var(--gold-light);"></span>
+                                <span id="userRoleBadge" class="role-badge">Owner</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex gap-1">
+                        <button id="profilUsahaBtn" class="w-8 h-8 rounded-xl flex items-center justify-center admin-only" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);cursor:pointer;" title="Pengaturan"><i class="fas fa-cog text-xs"></i></button>
+                        <button id="logoutLicenseBtn" class="px-3 py-1.5 rounded-xl text-[10px] font-semibold cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Keluar</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Transaksi Aktif -->
+        <section class="px-3 mt-3">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fas fa-spinner fa-pulse text-sm" style="color:#fbbf24;"></i>
+                <h2 class="font-display text-sm font-bold" style="color:#fbbf24;">Sedang Diproses</h2>
+            </div>
+            <div id="activeTransaksiList" class="space-y-2">
+                <div class="glass-card p-3 text-center text-xs text-gray-400">Tidak ada transaksi aktif</div>
+            </div>
+        </section>
+
+        <!-- Transaksi Cepat -->
+        <section class="px-3 mt-3">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fas fa-bolt text-sm" style="color:var(--gold);"></i>
+                <h2 class="font-display text-sm font-bold">Transaksi Cepat</h2>
+            </div>
+            <div id="transaksiButtons" class="grid grid-cols-2 gap-2">
+                <div class="glass-card p-4 col-span-2 text-center text-xs">Memuat...</div>
+            </div>
+        </section>
+
+        <!-- Tab Navigation -->
+        <nav class="px-3 mt-3">
+            <div class="glass-card p-1" style="border-radius:16px;">
+                <div class="tabs-container flex gap-1">
+                    <button class="tab-luxury active" data-tab="dashboard"><i class="fas fa-chart-line mr-1"></i>Dashboard</button>
+                    <button class="tab-luxury" data-tab="riwayat"><i class="fas fa-history mr-1"></i>Riwayat</button>
+                    <button class="tab-luxury admin-only" data-tab="layanan"><i class="fas fa-tags mr-1"></i>Layanan</button>
+                    <button class="tab-luxury admin-only" data-tab="tukang"><i class="fas fa-users mr-1"></i>Tukang</button>
+                    <button class="tab-luxury" data-tab="leaderboard"><i class="fas fa-trophy mr-1"></i>Peringkat</button>
+                    <button class="tab-luxury admin-only" data-tab="biaya"><i class="fas fa-receipt mr-1"></i>Biaya</button>
+                    <button class="tab-luxury admin-only" data-tab="laporanTukang"><i class="fas fa-money-bill mr-1"></i>Gaji</button>
+                    <button class="tab-luxury admin-only" data-tab="pengaturan"><i class="fas fa-cog mr-1"></i>Pengaturan</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Dashboard -->
+        <div id="tabDashboard" class="tab-content px-3 mt-3 space-y-3">
+            <div class="glass-card p-3">
+                <div class="flex justify-between items-center"><button id="prevDay" class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);color:var(--text-secondary);"><i class="fas fa-chevron-left text-xs"></i></button><span id="selectedDate" class="font-semibold text-xs" style="color:var(--gold-light);"></span><button id="nextDay" class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);color:var(--text-secondary);"><i class="fas fa-chevron-right text-xs"></i></button></div>
+                <div class="flex justify-between items-center mt-2"><button id="todayBtn" class="text-[10px] font-semibold cursor-pointer" style="color:var(--gold);background:none;border:none;">Hari Ini</button><button onclick="exportToPDF()" class="px-3 py-1.5 rounded-xl text-[10px] font-semibold cursor-pointer admin-only" style="background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.18);color:var(--gold);"><i class="fas fa-file-pdf mr-1"></i>PDF</button></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2"><div class="glass-card p-3 text-center"><i class="fas fa-motorcycle text-lg mb-1" style="color:#60a5fa;"></i><p class="text-xl font-bold" id="totalMotor">0</p><p class="text-[10px]">Total Motor</p></div><div class="glass-card p-3 text-center"><i class="fas fa-car text-lg mb-1" style="color:#34d399;"></i><p class="text-xl font-bold" id="totalMobil">0</p><p class="text-[10px]">Total Mobil</p></div><div class="glass-card p-3 text-center"><i class="fas fa-coins text-lg mb-1" style="color:var(--gold);"></i><p class="text-sm font-bold" id="pendapatanKotor">Rp0</p><p class="text-[10px]">Pendapatan Kotor</p></div><div class="glass-card p-3 text-center"><i class="fas fa-chart-pie text-lg mb-1" style="color:#a78bfa;"></i><p class="text-sm font-bold" id="labaBersih">Rp0</p><p class="text-[10px]">Laba Bersih</p></div></div>
+            <div class="glass-card p-3 admin-only"><div class="flex justify-between items-center mb-2"><span class="text-xs font-semibold"><i class="fas fa-truck mr-1" style="color:#f87171;"></i>Biaya Operasional</span><button id="tambahBiayaBtn" class="btn-gold px-2 py-1 rounded-lg text-[10px]"><i class="fas fa-plus mr-0.5"></i>Tambah</button></div><div id="biayaOperasionalList" class="max-h-24 overflow-y-auto"></div><div class="mt-2 pt-2 flex justify-between border-t border-white/10"><span class="text-[10px]">Total Biaya</span><span id="totalBiayaOperasional" class="font-bold text-xs text-red-400">Rp0</span></div></div>
+            <div class="glass-card p-3"><div style="height:160px;"><canvas id="profitChart"></canvas></div></div>
+            <div class="glass-card p-3 admin-only"><div class="flex justify-between items-center mb-2"><span class="text-xs font-semibold"><i class="fas fa-money-bill-wave mr-1"></i>Gaji Tukang</span><span id="totalGajiTukang" class="font-bold text-xs" style="color:var(--gold);">Rp0</span></div><div id="gajiTukangList" class="max-h-32 overflow-y-auto"></div></div>
+            <div class="glass-card p-3"><h3 class="text-xs font-semibold mb-2"><i class="fas fa-receipt mr-1"></i>Transaksi Hari Ini</h3><div id="transaksiHariIni"></div></div>
+        </div>
+
+        <!-- Riwayat -->
+        <div id="tabRiwayat" class="tab-content px-3 mt-3" style="display:none;"><h2 class="font-display text-sm font-bold mb-3"><i class="fas fa-history mr-1"></i>Riwayat Transaksi Selesai</h2><div id="riwayatTransaksiList" class="space-y-2"></div></div>
+
+        <!-- Layanan (Admin only) -->
+        <div id="tabLayanan" class="tab-content px-3 mt-3" style="display:none;"><div class="flex justify-between items-center mb-3"><h2 class="font-display text-sm font-bold"><i class="fas fa-tags mr-1"></i>Layanan</h2><button id="tambahLayananBtn" class="btn-gold px-3 py-1.5 rounded-xl text-[10px]">+ Tambah</button></div><div id="layananList" class="space-y-2"></div></div>
+
+        <!-- Tukang (Admin only) -->
+        <div id="tabTukang" class="tab-content px-3 mt-3" style="display:none;"><div class="flex justify-between items-center mb-3"><h2 class="font-display text-sm font-bold"><i class="fas fa-users mr-1"></i>Tukang</h2><button id="tambahTukangBtn" class="btn-gold px-3 py-1.5 rounded-xl text-[10px]">+ Tambah</button></div><div class="glass-card p-3 mb-3"><div class="flex justify-between items-center"><div><span class="status-badge status-available text-[10px]">Tersedia</span> <span id="availableCount" class="text-xs ml-1">0</span></div><div><span class="status-badge status-busy text-[10px]">Bekerja</span> <span id="busyCount" class="text-xs ml-1">0</span></div></div></div><div id="tukangList" class="space-y-2"></div></div>
+
+        <!-- Leaderboard -->
+        <div id="tabLeaderboard" class="tab-content px-3 mt-3" style="display:none;"><div class="flex gap-2 mb-3"><button id="leaderboardWeeklyBtn" class="btn-gold flex-1 py-1.5 rounded-xl text-xs">Mingguan</button><button id="leaderboardMonthlyBtn" class="btn-blue flex-1 py-1.5 rounded-xl text-xs">Bulanan</button></div><div class="reward-card mb-3 p-2"><div class="flex items-center gap-2 mb-1"><i class="fas fa-gift text-gold text-xs"></i><span class="text-xs font-bold">🎁 Reward</span></div><div class="text-[10px] text-gray-300 space-y-0.5"><p>🏆 Peringkat 1: Bonus +50.000</p><p>⭐ Peringkat 2: Bonus +30.000</p><p>✨ Peringkat 3: Bonus +20.000</p></div></div><div id="leaderboardContent" class="space-y-2"><div class="text-center py-5 text-xs text-gray-400">Memuat data...</div></div></div>
+
+        <!-- Biaya (Admin only) -->
+        <div id="tabBiaya" class="tab-content px-3 mt-3" style="display:none;"><div class="flex justify-between items-center mb-3"><h2 class="font-display text-sm font-bold"><i class="fas fa-receipt mr-1"></i>Riwayat Biaya</h2><button id="tambahBiayaDariTabBtn" class="btn-gold px-3 py-1.5 rounded-xl text-[10px]">+ Tambah</button></div><div id="riwayatBiayaList" class="space-y-2"></div></div>
+
+        <!-- Gaji (Admin only) -->
+        <div id="tabLaporanTukang" class="tab-content px-3 mt-3" style="display:none;"><h2 class="font-display text-sm font-bold mb-3"><i class="fas fa-money-bill-wave mr-1"></i>Rekap Gaji Tukang</h2><div id="laporanTukangDetail" class="space-y-2"></div></div>
+
+        <!-- Pengaturan (Admin only) -->
+        <div id="tabPengaturan" class="tab-content px-3 mt-3" style="display:none;">
+            <h2 class="font-display text-sm font-bold mb-3"><i class="fas fa-cog mr-1"></i>Pengaturan</h2>
+            
+            <!-- Manajemen Staf -->
+            <div class="glass-card p-3 mb-3">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2"><i class="fas fa-users text-gold"></i><span class="text-sm font-semibold">Manajemen Staf</span></div>
+                    <button id="tambahStaffBtn" class="btn-gold px-3 py-1.5 rounded-lg text-[10px]"><i class="fas fa-plus mr-1"></i>Tambah Staf</button>
+                </div>
+                <div id="staffList" class="space-y-2 max-h-60 overflow-y-auto">
+                    <div class="text-center text-xs text-gray-400 py-3">Belum ada staf</div>
+                </div>
+                <p class="text-[9px] text-gray-500 mt-2 text-center">💡 Staf hanya bisa input transaksi, tidak bisa edit harga atau data lainnya</p>
+            </div>
+
+            <!-- Profil Usaha -->
+            <div class="glass-card p-3">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2"><i class="fas fa-store text-gold"></i><span class="text-sm font-semibold">Profil Usaha</span></div>
+                    <button id="editProfilBtn" class="btn-gold px-3 py-1.5 rounded-lg text-[10px]">Edit Profil</button>
+                </div>
+                <div id="tampilanProfil" class="mt-2 text-[10px] text-gray-400 space-y-1">
+                    <p><strong>Nama:</strong> <span id="showNamaUsaha">-</span></p>
+                    <p><strong>Alamat:</strong> <span id="showAlamatUsaha">-</span></p>
+                    <p><strong>Telepon:</strong> <span id="showTeleponUsaha">-</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Profil Usaha -->
+        <div class="modal-overlay" id="profilUsahaModal">
+            <div class="modal-box">
+                <div class="text-center mb-4"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);"><i class="fas fa-building text-2xl" style="color:var(--gold);"></i></div></div>
+                <h3 class="font-display text-xl font-bold text-center mb-1">Profil Usaha</h3>
+                <p class="text-center text-xs mb-5" style="color:var(--text-secondary);">Data akan tercetak di struk</p>
+                <div class="space-y-3 mb-5">
+                    <input type="text" id="namaUsaha" placeholder="Nama Usaha" class="lux-input">
+                    <input type="text" id="alamatUsaha" placeholder="Alamat lengkap" class="lux-input">
+                    <input type="tel" id="teleponUsaha" placeholder="Nomor telepon" class="lux-input">
+                    <textarea id="footerStruk" placeholder="Footer struk" rows="2" class="lux-input"></textarea>
+                </div>
+                <div class="flex gap-3">
+                    <button id="closeProfilModal" class="flex-1 py-3 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button>
+                    <button id="saveProfilBtn" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer">Simpan Profil</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Tambah Staf -->
+        <div class="modal-overlay" id="tambahStaffModal">
+            <div class="modal-box">
+                <div class="text-center mb-4"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);"><i class="fas fa-user-plus text-2xl" style="color:var(--gold);"></i></div></div>
+                <h3 class="font-display text-xl font-bold text-center mb-1">Tambah Staf</h3>
+                <p class="text-center text-xs mb-5" style="color:var(--text-secondary);">Staf akan memiliki akses terbatas</p>
+                <div class="space-y-3 mb-5">
+                    <input type="email" id="staffEmail" placeholder="Email staf" class="lux-input">
+                    <select id="staffRole" class="lux-input">
+                        <option value="staff">Staf (Kasir)</option>
+                        <option value="admin">Admin (Akses lebih luas)</option>
+                    </select>
+                </div>
+                <div class="flex gap-3">
+                    <button id="closeStaffModal" class="flex-1 py-3 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button>
+                    <button id="confirmStaffBtn" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer">Kirim Undangan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Transaksi -->
+        <div class="modal-overlay" id="transaksiModal">
+            <div class="modal-box">
+                <div class="text-center mb-3"><div class="inline-flex items-center justify-center w-14 h-14 rounded-full mb-2" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);"><i class="fas fa-car-side text-xl" style="color:var(--gold);"></i></div></div>
+                <h3 id="transaksiModalTitle" class="font-display text-lg font-bold text-center mb-1">Cuci Motor</h3>
+                <p id="transaksiModalPrice" class="text-center text-xs mb-4" style="color:var(--gold);">Harga: Rp15.000</p>
+                <div class="space-y-3 mb-4">
+                    <input type="text" id="platNomor" placeholder="Plat nomor (contoh: B 1234 CD)" class="lux-input" autocomplete="off">
+                    <select id="pilihTukang" class="lux-input"><option value="">Pilih tukang cuci</option></select>
+                    <div id="rekomendasiTukang" class="text-xs text-center" style="color:var(--gold);"></div>
+                </div>
+                <div class="flex gap-3">
+                    <button id="closeTransaksiModal" class="flex-1 py-2.5 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button>
+                    <button id="confirmTransaksiBtn" class="btn-gold flex-1 py-2.5 rounded-xl text-sm cursor-pointer">Mulai Cuci</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Edit Tukang -->
+        <div class="modal-overlay" id="editTukangModal">
+            <div class="modal-box">
+                <div class="text-center mb-4"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);"><i class="fas fa-edit text-2xl" style="color:var(--gold);"></i></div></div>
+                <h3 class="font-display text-xl font-bold text-center mb-1">Edit Tukang Cuci</h3>
+                <p class="text-center text-xs mb-5" style="color:var(--text-secondary);">Ubah nama atau nomor WhatsApp</p>
+                <div class="space-y-3 mb-5">
+                    <input type="text" id="editTukangNama" placeholder="Nama tukang" class="lux-input">
+                    <input type="tel" id="editTukangWa" placeholder="Nomor WhatsApp (contoh: 628123456789)" class="lux-input">
+                </div>
+                <div class="flex gap-3">
+                    <button id="closeEditModal" class="flex-1 py-3 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button>
+                    <button id="saveEditTukangBtn" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== JAVASCRIPT APLIKASI ==================== -->
+    <script type="module">
+        // ==================== SISTEM LISENSI ====================
+        const VALID_LICENSES = [
+            "CARWASH-A1B2-C3D4-E5F6", "CARWASH-G7H8-I9J0-K1L2", "CARWASH-M3N4-O5P6-Q7R8",
+            "CARWASH-S9T0-U1V2-W3X4", "CARWASH-Y5Z6-A7B8-C9D0", "CARWASH-E1F2-G3H4-I5J6",
+            "CARWASH-K7L8-M9N0-O1P2", "CARWASH-Q3R4-S5T6-U7V8", "CARWASH-W9X0-Y1Z2-A3B4",
+            "CARWASH-C5D6-E7F8-G9H0", "DEMO-2024-ABCD-0001"
+        ];
+
+        function validateLicense(key) { return VALID_LICENSES.includes(key.toUpperCase()); }
+        function isLicenseActivated() { const saved = localStorage.getItem('carwash99_license'); return saved && validateLicense(saved); }
+        function saveLicense(key) { localStorage.setItem('carwash99_license', key); localStorage.setItem('carwash99_license_date', new Date().toISOString()); }
+        function logoutLicense() { localStorage.removeItem('carwash99_license'); localStorage.removeItem('carwash99_license_date'); location.reload(); }
+
+        const licenseScreen = document.getElementById('licenseScreen');
+        const appScreen = document.getElementById('appScreen');
+
+        function showLicenseScreen() { if (licenseScreen) licenseScreen.style.display = 'flex'; if (appScreen) appScreen.style.display = 'none'; }
+        function showAppScreen() { if (licenseScreen) licenseScreen.style.display = 'none'; if (appScreen) appScreen.style.display = 'block'; }
+
+        document.getElementById('activateLicenseBtn').onclick = () => {
+            const key = document.getElementById('licenseKey').value.trim();
+            if (!key) { document.getElementById('licenseError').textContent = 'Masukkan kode lisensi!'; document.getElementById('licenseError').classList.remove('hidden'); return; }
+            if (validateLicense(key)) { saveLicense(key); showAppScreen(); }
+            else { document.getElementById('licenseError').textContent = 'Kode lisensi tidak valid!'; document.getElementById('licenseError').classList.remove('hidden'); }
+        };
+        document.getElementById('logoutLicenseBtn')?.addEventListener('click', () => { if (confirm('Yakin ingin logout? Lisensi akan dihapus dari perangkat ini.')) logoutLicense(); });
+
+        if (isLicenseActivated()) showAppScreen(); else showLicenseScreen();
+
+        // ==================== APLIKASI CARWASH99 ====================
+        if (isLicenseActivated()) {
+            importFirebaseAndInit();
+        }
+
+        async function importFirebaseAndInit() {
+            const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+            const { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, limit, Timestamp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+            const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyCFXSdwMp3WaUDGeYj2m4Q-l49TYs_LRR0",
+                authDomain: "carwash-99.firebaseapp.com",
+                projectId: "carwash-99",
+                storageBucket: "carwash-99.firebasestorage.app",
+                messagingSenderId: "617166626443",
+                appId: "1:617166626443:web:b030f30fd51c3b8eb2fe8e"
+            };
+
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
+
+            // State
+            let currentUser = null;
+            let currentUserRole = 'owner';
+            let layananList = [];
+            let tukangList = [];
+            let transaksiList = [];
+            let biayaList = [];
+            let activeTransaksi = [];
+            let chartInstance = null;
+            let selectedDate = new Date().toISOString().split('T')[0];
+            let editingTukangId = null;
+            let leaderboardPeriod = 'weekly';
+            let selectedLayanan = null;
+            let usahaProfil = { nama: "CarWash99", alamat: "", telepon: "", footer: "Terima Kasih 🙏" };
+            let tukangStatus = {};
+
+            function showToast(msg, type = 'success') {
+                const container = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+                toast.innerHTML = `${icons[type]} ${msg}`;
+                container.appendChild(toast);
+                requestAnimationFrame(() => toast.classList.add('show'));
+                setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 3000);
+            }
+
+            function formatRupiah(amount) { return `Rp${amount.toLocaleString('id-ID')}`; }
+
+            // Multi-Level User Functions
+            async function loadUserRole() {
+                if (!currentUser) return 'owner';
+                // Cek apakah user ini terdaftar sebagai staff
+                const ownerCheck = localStorage.getItem('carwash99_owner_email');
+                if (ownerCheck === currentUser.email) return 'owner';
+                
+                // Cek di koleksi staff (perlu query ke Firestore)
+                // Untuk demo sederhana, kita simpan role di localStorage
+                const savedRole = localStorage.getItem(`role_${currentUser.uid}`);
+                if (savedRole === 'staff') return 'staff';
+                return 'owner';
+            }
+
+            async function addStaff(email, role) {
+                if (!currentUser) return;
+                // Simpan data staff di Firestore
+                await addDoc(collection(db, "users", currentUser.uid, "staff"), {
+                    email: email,
+                    role: role,
+                    addedAt: Timestamp.now(),
+                    addedBy: currentUser.uid
+                });
+                showToast(`Undangan staf dikirim ke ${email}`, 'success');
+                loadStaffList();
+            }
+
+            async function loadStaffList() {
+                const snapshot = await getDocs(collection(db, "users", currentUser.uid, "staff"));
+                const staffList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const container = document.getElementById('staffList');
+                if (staffList.length === 0) {
+                    container.innerHTML = '<div class="text-center text-xs text-gray-400 py-3">Belum ada staf</div>';
+                    return;
+                }
+                container.innerHTML = staffList.map(s => `
+                    <div class="flex justify-between items-center py-2 border-b border-white/10">
+                        <div><span class="text-sm">${s.email}</span><span class="text-[9px] ml-2 text-gray-400">${s.role}</span></div>
+                        <button onclick="removeStaff('${s.id}')" class="text-red-400 text-[10px]">Hapus</button>
+                    </div>
+                `).join('');
+            }
+
+            window.removeStaff = async function(id) {
+                if (confirm('Hapus staf ini?')) {
+                    await deleteDoc(doc(db, "users", currentUser.uid, "staff", id));
+                    loadStaffList();
+                    showToast('Staf dihapus', 'info');
+                }
+            };
+
+            function applyStaffRestrictions() {
+                if (currentUserRole === 'staff') {
+                    document.body.classList.add('staff-mode');
+                    document.getElementById('userRoleBadge').textContent = 'Staff';
+                    document.getElementById('userRoleBadge').style.background = 'rgba(100,100,255,0.15)';
+                    document.getElementById('userRoleBadge').style.color = '#93c5fd';
+                } else {
+                    document.body.classList.remove('staff-mode');
+                    document.getElementById('userRoleBadge').textContent = 'Owner';
+                }
+            }
+
+            function loadTukangStatus() { const saved = localStorage.getItem('tukangStatus'); if (saved) tukangStatus = JSON.parse(saved); }
+            function saveTukangStatus() { localStorage.setItem('tukangStatus', JSON.stringify(tukangStatus)); }
+            function setTukangStatus(tukangId, status) { tukangStatus[tukangId] = { status, startTime: new Date().toISOString() }; saveTukangStatus(); renderTukangList(); updateStatusCounts(); }
+            function getTukangStatus(tukangId) { return tukangStatus[tukangId] || { status: 'available' }; }
+            function updateStatusCounts() {
+                const available = tukangList.filter(t => getTukangStatus(t.id).status === 'available').length;
+                const busy = tukangList.filter(t => getTukangStatus(t.id).status === 'busy').length;
+                const availableEl = document.getElementById('availableCount');
+                const busyEl = document.getElementById('busyCount');
+                if (availableEl) availableEl.textContent = available;
+                if (busyEl) busyEl.textContent = busy;
+            }
+
+            function loadUsahaProfil() { const saved = localStorage.getItem('usahaProfil'); if (saved) { usahaProfil = JSON.parse(saved); updateUsahaProfilDisplay(); } }
+            function saveUsahaProfil() { localStorage.setItem('usahaProfil', JSON.stringify(usahaProfil)); updateUsahaProfilDisplay(); }
+            function updateUsahaProfilDisplay() {
+                document.getElementById("headerNamaUsaha").textContent = usahaProfil.nama || "CarWash99";
+                document.getElementById("showNamaUsaha").textContent = usahaProfil.nama || "-";
+                document.getElementById("showAlamatUsaha").textContent = usahaProfil.alamat || "-";
+                document.getElementById("showTeleponUsaha").textContent = usahaProfil.telepon || "-";
+            }
+
+            function loadActiveTransaksi() { const saved = localStorage.getItem('activeTransaksi'); if (saved) activeTransaksi = JSON.parse(saved); }
+            function saveActiveTransaksi() { localStorage.setItem('activeTransaksi', JSON.stringify(activeTransaksi)); }
+            function addActiveTransaksi(transaksi) { activeTransaksi.push(transaksi); saveActiveTransaksi(); renderActiveTransaksi(); }
+            function removeActiveTransaksi(transaksiId) { activeTransaksi = activeTransaksi.filter(t => t.id !== transaksiId); saveActiveTransaksi(); renderActiveTransaksi(); }
+
+            function renderActiveTransaksi() {
+                const container = document.getElementById("activeTransaksiList");
+                if (!container) return;
+                if (activeTransaksi.length === 0) { container.innerHTML = '<div class="glass-card p-3 text-center text-xs text-gray-400">✅ Tidak ada transaksi aktif</div>'; return; }
+                container.innerHTML = activeTransaksi.map(t => `
+                    <div class="glass-card p-3 progress-item"><div class="flex justify-between items-center"><div><div class="flex items-center gap-2"><i class="fas fa-spinner fa-pulse text-xs" style="color:#fbbf24;"></i><span class="font-bold text-sm">${t.platNomor}</span><span class="status-badge status-progress text-[9px]">ON PROGRESS</span></div><p class="text-[10px] text-gray-400 mt-1">${t.namaLayanan} | Tukang: ${t.namaTukang}</p><p class="text-[9px] text-gray-500">Mulai: ${new Date(t.startTime).toLocaleTimeString()}</p></div><button onclick="selesaiTransaksi('${t.id}', '${t.tukangId}', ${t.harga}, ${t.jasaTukang}, '${t.namaLayanan}', '${t.platNomor}', '${t.namaTukang}')" class="btn-success px-3 py-1.5 rounded-lg text-[10px]"><i class="fas fa-check mr-0.5"></i>Selesai</button></div></div>
+                `).join('');
+            }
+
+            window.selesaiTransaksi = async function(activeId, tukangId, harga, jasa, layanan, plat, namaTukang) {
+                try {
+                    await addDoc(collection(db, "users", currentUser.uid, "transaksi"), {
+                        layananId: activeId, namaLayanan: layanan, harga: harga, jasaTukang: jasa,
+                        tukangId: tukangId, namaTukang: namaTukang, platNomor: plat,
+                        tanggal: new Date().toISOString().split('T')[0], timestamp: Timestamp.now()
+                    });
+                    setTukangStatus(tukangId, 'available');
+                    removeActiveTransaksi(activeId);
+                    await loadAllData();
+                    showToast(`✅ ${layanan} - ${plat} selesai!`, 'success');
+                } catch (error) { showToast('Gagal menyelesaikan transaksi', 'error'); }
+            };
+
+            async function loadAllData() {
+                if (!currentUser) return;
+                await Promise.all([loadLayanan(), loadTukang(), loadTransaksi(), loadBiaya()]);
+                loadTukangStatus();
+                loadActiveTransaksi();
+                renderDashboard();
+                renderLayananList();
+                renderTukangList();
+                renderTransaksiButtons();
+                renderLaporanTukang();
+                renderRiwayatBiaya();
+                renderLeaderboard();
+                renderRiwayatTransaksi();
+                renderActiveTransaksi();
+                updateStatusCounts();
+            }
+
+            async function loadLayanan() { const snapshot = await getDocs(collection(db, "users", currentUser.uid, "layanan")); layananList = []; snapshot.forEach(doc => layananList.push({ id: doc.id, ...doc.data() })); }
+            async function loadTukang() { const snapshot = await getDocs(collection(db, "users", currentUser.uid, "tukang")); tukangList = []; snapshot.forEach(doc => tukangList.push({ id: doc.id, ...doc.data(), wa: doc.data().wa || '' })); }
+            async function loadTransaksi() { const q = query(collection(db, "users", currentUser.uid, "transaksi"), orderBy('timestamp', 'desc'), limit(500)); const snapshot = await getDocs(q); transaksiList = []; snapshot.forEach(doc => transaksiList.push({ id: doc.id, ...doc.data() })); }
+            async function loadBiaya() { const snapshot = await getDocs(collection(db, "users", currentUser.uid, "biaya")); biayaList = []; snapshot.forEach(doc => biayaList.push({ id: doc.id, ...doc.data() })); }
+
+            function getStatsByDate(date) {
+                const th = transaksiList.filter(t => t.tanggal === date);
+                const by = biayaList.filter(b => b.tanggal === date);
+                let tm = 0, tb = 0, pk = 0, jt = 0;
+                th.forEach(t => { pk += t.harga; jt += t.jasaTukang; if (t.namaLayanan.toLowerCase().includes("motor")) tm++; if (t.namaLayanan.toLowerCase().includes("mobil")) tb++; });
+                const totalBiaya = by.reduce((s, b) => s + b.nominal, 0);
+                return { tm, tb, pk, jt, totalBiaya, laba: pk - jt - totalBiaya, transaksiHari: th, biayaHari: by };
+            }
+
+            function getGajiTukang() { let gaji = {}; transaksiList.forEach(t => { if (!gaji[t.namaTukang]) gaji[t.namaTukang] = { total: 0, transaksi: [], id: t.tukangId }; gaji[t.namaTukang].total += t.jasaTukang; gaji[t.namaTukang].transaksi.push({ layanan: t.namaLayanan, plat: t.platNomor || '-', harga: t.harga, jasa: t.jasaTukang, tanggal: t.tanggal }); }); return gaji; }
+            function getWeeklyData() { let data = {}; for (let i = 6; i >= 0; i--) { let d = new Date(); d.setDate(d.getDate() - i); let ds = d.toISOString().split('T')[0]; data[ds] = getStatsByDate(ds).laba; } return data; }
+
+            function renderDashboard() {
+                const stats = getStatsByDate(selectedDate);
+                const gaji = getGajiTukang();
+                document.getElementById("totalMotor").textContent = stats.tm; document.getElementById("totalMobil").textContent = stats.tb;
+                document.getElementById("pendapatanKotor").innerHTML = formatRupiah(stats.pk); document.getElementById("labaBersih").innerHTML = formatRupiah(stats.laba);
+                let biayaHtml = stats.biayaHari.map(b => `<div class="flex justify-between py-1 text-[10px]"><span>${b.kategori}</span><span class="text-red-400">-${formatRupiah(b.nominal)}</span></div>`).join('');
+                document.getElementById("biayaOperasionalList").innerHTML = biayaHtml || '<p class="text-[10px] text-center text-gray-400">Belum ada biaya</p>';
+                document.getElementById("totalBiayaOperasional").textContent = formatRupiah(stats.totalBiaya);
+                let gajiHtml = Object.entries(gaji).map(([n, data]) => `<div class="flex justify-between py-1 text-[10px]"><span>${n}</span><span class="text-green-400">${formatRupiah(data.total)}</span></div>`).join('');
+                document.getElementById("gajiTukangList").innerHTML = gajiHtml || '<p class="text-[10px] text-center">Belum ada transaksi</p>';
+                document.getElementById("totalGajiTukang").textContent = formatRupiah(Object.values(gaji).reduce((a,b)=>a+b.total,0));
+                if (chartInstance) chartInstance.destroy();
+                const weekly = getWeeklyData(); const ctx = document.getElementById("profitChart").getContext("2d");
+                chartInstance = new Chart(ctx, { type: 'line', data: { labels: Object.keys(weekly).map(d => d.slice(5)), datasets: [{ label: 'Laba Bersih', data: Object.values(weekly), borderColor: '#d4af37', backgroundColor: 'rgba(212,175,55,0.1)', fill: true, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false } });
+                let trHtml = stats.transaksiHari.map(t => `<div class="flex justify-between py-1 text-[10px] border-b border-white/10"><span>${t.namaLayanan} (${t.platNomor || '-'})<br><span class="text-gray-400">${t.namaTukang}</span></span><span>${formatRupiah(t.harga)}</span></div>`).join('');
+                document.getElementById("transaksiHariIni").innerHTML = trHtml || '<p class="text-[10px] text-center">Belum ada transaksi</p>';
+                document.getElementById("selectedDate").innerHTML = selectedDate;
+            }
+
+            function renderRiwayatTransaksi() {
+                const container = document.getElementById("riwayatTransaksiList");
+                if (!container) return;
+                const selesaiTransaksiList = transaksiList.filter(t => t.tanggal === new Date().toISOString().split('T')[0]);
+                if (selesaiTransaksiList.length === 0) { container.innerHTML = '<div class="glass-card p-3 text-center text-xs text-gray-400">Belum ada transaksi selesai hari ini</div>'; return; }
+                container.innerHTML = selesaiTransaksiList.map(t => `<div class="glass-card p-2"><div class="flex justify-between items-center"><div><span class="font-bold text-sm">${t.platNomor}</span><span class="text-[10px] text-gray-400 ml-2">${t.namaLayanan}</span></div><span class="text-green-400 text-xs">${formatRupiah(t.harga)}</span></div><div class="flex justify-between text-[9px] text-gray-400 mt-1"><span>Tukang: ${t.namaTukang}</span><span>${new Date(t.timestamp?.toDate()).toLocaleTimeString() || '-'}</span></div></div>`).join('');
+            }
+
+            function renderLayananList() {
+                const container = document.getElementById("layananList");
+                if (!container) return;
+                if (layananList.length === 0) { container.innerHTML = '<div class="glass-card p-4 text-center"><p class="text-xs">Belum ada layanan</p></div>'; return; }
+                container.innerHTML = layananList.map(l => `<div class="glass-card p-2 flex justify-between items-center"><div><p class="font-bold text-sm">${l.nama}</p><p class="text-[10px]">Harga: ${formatRupiah(l.harga)} | Jasa: ${formatRupiah(l.jasaTukang)}</p></div><button onclick="hapusLayanan('${l.id}')" class="text-red-400 text-xs btn-delete">Hapus</button></div>`).join('');
+            }
+
+            function renderTukangList() {
+                const container = document.getElementById("tukangList");
+                if (!container) return;
+                if (tukangList.length === 0) { container.innerHTML = '<div class="glass-card p-4 text-center"><p class="text-xs">Belum ada tukang</p></div>'; return; }
+                container.innerHTML = tukangList.map(t => { const status = getTukangStatus(t.id); const statusClass = status.status === 'busy' ? 'status-busy' : 'status-available'; const statusText = status.status === 'busy' ? 'Bekerja' : 'Tersedia'; return `<div class="glass-card p-2 flex justify-between items-center"><div><p class="font-bold text-sm">${t.nama}</p><p class="text-[10px]">WA: ${t.wa || '-'}</p><span class="status-badge ${statusClass} text-[9px] mt-0.5 inline-block">${statusText}</span></div><div class="flex gap-1 flex-col items-end">${status.status === 'busy' ? `<button onclick="setTukangStatusUI('${t.id}', 'available')" class="text-green-400 text-[10px] px-2 py-0.5 rounded bg-green-400/10">Selesai</button>` : `<button onclick="setTukangStatusUI('${t.id}', 'busy')" class="text-yellow-400 text-[10px] px-2 py-0.5 rounded bg-yellow-400/10">Mulai</button>`}<div class="flex gap-1 mt-1"><button onclick="editTukang('${t.id}', '${t.nama}', '${t.wa || ''}')" class="text-blue-400 text-[10px] btn-edit">Edit</button><button onclick="hapusTukang('${t.id}')" class="text-red-400 text-[10px] btn-delete">Hapus</button></div></div></div>`; }).join('');
+                updateStatusCounts();
+            }
+
+            function renderRiwayatBiaya() {
+                const container = document.getElementById("riwayatBiayaList");
+                if (!container) return;
+                if (biayaList.length === 0) { container.innerHTML = '<div class="glass-card p-4 text-center"><p class="text-xs">Belum ada biaya</p></div>'; return; }
+                const byDate = {}; biayaList.forEach(b => { if (!byDate[b.tanggal]) byDate[b.tanggal] = []; byDate[b.tanggal].push(b); });
+                container.innerHTML = Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0])).map(([tgl, items]) => `<div class="glass-card p-2"><div class="flex justify-between mb-1"><span class="font-bold text-xs">${tgl}</span><span class="text-red-400 text-xs">-${formatRupiah(items.reduce((s,i)=>s+i.nominal,0))}</span></div>${items.map(i => `<div class="flex justify-between text-[10px] py-0.5 border-b border-white/10"><span>${i.kategori}</span><span>-${formatRupiah(i.nominal)}</span><button onclick="hapusBiaya('${i.id}')" class="text-red-400 text-[9px] btn-delete">Hapus</button></div>`).join('')}</div>`).join('');
+            }
+
+            function renderLaporanTukang() {
+                const container = document.getElementById("laporanTukangDetail");
+                if (!container) return;
+                let gajiDetail = getGajiTukang();
+                if (Object.keys(gajiDetail).length === 0) { container.innerHTML = '<div class="glass-card p-4 text-center"><p class="text-xs">Belum ada transaksi</p></div>'; return; }
+                container.innerHTML = Object.entries(gajiDetail).map(([nama, data]) => { let tukang = tukangList.find(t => t.id === data.id); let waNumber = tukang ? tukang.wa : ''; let hasWa = waNumber && waNumber.length > 0; let transaksiHariIni = data.transaksi.filter(t => t.tanggal === selectedDate); let totalGajiHariIni = transaksiHariIni.reduce((sum, t) => sum + t.jasa, 0); return `<div class="glass-card p-2"><div class="flex justify-between items-center mb-1 flex-wrap gap-1"><div><span class="font-bold text-sm">${nama}</span> <span class="text-[9px] text-gray-400">${hasWa ? '✅ WA' : '⚠️ WA'}</span></div><div class="text-green-400 text-xs font-bold">${formatRupiah(data.total)}</div></div><div class="text-[10px] space-y-0.5 mt-1">${transaksiHariIni.length > 0 ? `<div class="text-gray-400">📅 Hari ini (${selectedDate}):</div>${transaksiHariIni.map(t => `<div class="flex justify-between py-0.5 border-b border-white/5"><span>${t.layanan} - ${t.plat}</span><span>${formatRupiah(t.jasa)}</span></div>`).join('')}<div class="flex justify-between font-bold mt-1 pt-1 border-t border-white/10"><span>Total Gaji</span><span class="text-green-400">${formatRupiah(totalGajiHariIni)}</span></div>` : `<div class="text-gray-500 text-center py-1">Tidak ada transaksi hari ini</div>`}${hasWa && totalGajiHariIni > 0 ? `<div class="mt-1"><button onclick="sendWaGaji('${nama}', ${totalGajiHariIni}, ${JSON.stringify(transaksiHariIni).replace(/"/g, '&quot;')}, '${waNumber}')" class="btn-wa w-full py-1 rounded-lg text-[10px]"><i class="fab fa-whatsapp mr-0.5"></i>Kirim WA</button></div>` : ''}</div></div>`; }).join('');
+            }
+
+            function renderTransaksiButtons() {
+                const container = document.getElementById("transaksiButtons");
+                if (!container) return;
+                if (layananList.length === 0) { container.innerHTML = '<div class="glass-card p-4 col-span-2 text-center"><p class="text-xs">Tambahkan layanan dulu</p></div>'; return; }
+                if (tukangList.length === 0) { container.innerHTML = '<div class="glass-card p-4 col-span-2 text-center"><p class="text-xs text-yellow-400">Tambahkan tukang dulu</p></div>'; return; }
+                container.innerHTML = layananList.map(l => `<button onclick="bukaModalTransaksi('${l.id}', '${l.nama}', ${l.harga}, ${l.jasaTukang})" class="glass-card p-3 text-center hover:border-gold transition cursor-pointer"><i class="fas fa-soap text-xl mb-1" style="color:var(--gold);"></i><p class="font-bold text-xs">${l.nama}</p><p class="text-[9px] text-gold">${formatRupiah(l.harga)}</p></button>`).join('');
+            }
+
+            function renderLeaderboard() {
+                const container = document.getElementById("leaderboardContent"); if (!container) return;
+                let startDate = new Date(); if (leaderboardPeriod === 'weekly') startDate.setDate(startDate.getDate() - 7); else startDate.setDate(startDate.getDate() - 30);
+                const startDateStr = startDate.toISOString().split('T')[0]; const endDateStr = new Date().toISOString().split('T')[0];
+                let tukangStats = {}; tukangList.forEach(t => { tukangStats[t.nama] = { nama: t.nama, totalTransaksi: 0, totalPendapatan: 0, totalGaji: 0 }; });
+                transaksiList.forEach(t => { if (t.tanggal >= startDateStr && t.tanggal <= endDateStr && tukangStats[t.namaTukang]) { tukangStats[t.namaTukang].totalTransaksi++; tukangStats[t.namaTukang].totalPendapatan += t.harga; tukangStats[t.namaTukang].totalGaji += t.jasaTukang; } });
+                const sorted = Object.values(tukangStats).filter(s => s.totalTransaksi > 0).sort((a, b) => b.totalTransaksi - a.totalTransaksi);
+                if (sorted.length === 0) { container.innerHTML = `<div class="glass-card p-4 text-center"><p class="text-xs">Belum ada data transaksi</p></div>`; return; }
+                container.innerHTML = sorted.map((tukang, index) => { let medalIcon = ''; if (index === 0) medalIcon = '🥇'; else if (index === 1) medalIcon = '🥈'; else if (index === 2) medalIcon = '🥉'; else medalIcon = `${index + 1}`; return `<div class="glass-card p-2 mb-2"><div class="flex justify-between items-center"><div><span class="font-bold text-sm">${medalIcon} ${tukang.nama}</span><span class="badge-gold text-[9px] ml-2">${tukang.totalTransaksi} x</span></div><div class="text-green-400 text-xs font-bold">+${formatRupiah(tukang.totalGaji)}</div></div><div class="text-[9px] text-gray-400">Gaji: ${formatRupiah(tukang.totalGaji)} | Pendapatan: ${formatRupiah(tukang.totalPendapatan)}</div></div>`; }).join('');
+            }
+
+            window.bukaModalTransaksi = function(id, nama, harga, jasa) {
+                const availableTukang = tukangList.filter(t => getTukangStatus(t.id).status === 'available');
+                if (availableTukang.length === 0) { showToast('⚠️ Semua tukang sedang bekerja!', 'error'); return; }
+                selectedLayanan = { id, nama, harga, jasa };
+                document.getElementById("transaksiModalTitle").textContent = nama;
+                document.getElementById("transaksiModalPrice").innerHTML = `Harga: ${formatRupiah(harga)} | Jasa: ${formatRupiah(jasa)}`;
+                const select = document.getElementById("pilihTukang"); select.innerHTML = '<option value="">Pilih tukang</option>';
+                availableTukang.forEach(t => { select.innerHTML += `<option value="${t.id}" data-nama="${t.nama}">${t.nama}</option>`; });
+                document.getElementById("platNomor").value = "";
+                document.getElementById('transaksiModal').classList.add('show');
+            };
+
+            window.catatTransaksi = async function() {
+                const plat = document.getElementById("platNomor").value.trim();
+                const tukangId = document.getElementById("pilihTukang").value;
+                const tukangNama = document.getElementById("pilihTukang").options[document.getElementById("pilihTukang").selectedIndex]?.dataset.nama;
+                if (!plat) { showToast('Plat nomor wajib diisi!', 'error'); return; }
+                if (!tukangId) { showToast('Pilih tukang cuci!', 'error'); return; }
+                setTukangStatus(tukangId, 'busy');
+                const transaksiId = Date.now().toString();
+                addActiveTransaksi({ id: transaksiId, platNomor: plat.toUpperCase(), namaLayanan: selectedLayanan.nama, namaTukang: tukangNama, tukangId: tukangId, harga: selectedLayanan.harga, jasaTukang: selectedLayanan.jasa, startTime: new Date().toISOString() });
+                document.getElementById('transaksiModal').classList.remove('show');
+                showToast(`✅ ${selectedLayanan.nama} - ${plat.toUpperCase()} - ${tukangNama} dimulai`, 'success');
+                await loadAllData();
+            };
+
+            window.hapusLayanan = async function(id) { if (confirm('Hapus layanan ini?')) { await deleteDoc(doc(db, "users", currentUser.uid, "layanan", id)); showToast('Layanan dihapus', 'info'); loadAllData(); } };
+            window.hapusTukang = async function(id) { if (confirm('Hapus tukang ini?')) { await deleteDoc(doc(db, "users", currentUser.uid, "tukang", id)); showToast('Tukang dihapus', 'info'); loadAllData(); } };
+            window.hapusBiaya = async function(id) { if (confirm('Hapus biaya ini?')) { await deleteDoc(doc(db, "users", currentUser.uid, "biaya", id)); showToast('Biaya dihapus', 'info'); loadAllData(); } };
+            window.editTukang = function(id, nama, wa) { editingTukangId = id; document.getElementById('editTukangNama').value = nama; document.getElementById('editTukangWa').value = wa || ''; document.getElementById('editTukangModal').classList.add('show'); };
+            window.setTukangStatusUI = function(id, status) { setTukangStatus(id, status); showToast(`Status tukang diubah menjadi ${status === 'busy' ? 'Bekerja' : 'Tersedia'}`, 'info'); };
+            window.sendWaGaji = function(nama, totalGaji, transaksi, waNumber) { if (!waNumber) { showToast(`Nomor WA ${nama} belum diisi`, 'error'); return; } let cleanNumber = waNumber.replace(/[^0-9]/g, ''); if (cleanNumber.startsWith('0')) cleanNumber = '62' + cleanNumber.substring(1); if (!cleanNumber.startsWith('62')) cleanNumber = '62' + cleanNumber; let tanggal = new Date().toLocaleDateString('id-ID'); let detailTransaksi = ''; transaksi.forEach(t => { detailTransaksi += `▸ ${t.layanan} | Plat: ${t.plat} | ${formatRupiah(t.jasa)}\n`; }); let message = `Halo *${nama}*,\n\nBerikut laporan gaji untuk *${tanggal}*:\n\n${detailTransaksi}\n💰 *Total:* ${formatRupiah(totalGaji)}\n\nTerima kasih!`; window.open(`https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`, '_blank'); };
+
+            async function saveEditTukang() { let namaBaru = document.getElementById('editTukangNama').value.trim(); let waBaru = document.getElementById('editTukangWa').value.trim(); if (!namaBaru) { showToast('Nama tukang wajib diisi', 'error'); return; } try { await updateDoc(doc(db, "users", currentUser.uid, "tukang", editingTukangId), { nama: namaBaru, wa: waBaru }); showToast('Data tukang berhasil diupdate', 'success'); document.getElementById('editTukangModal').classList.remove('show'); await loadAllData(); } catch (error) { showToast('Gagal update: ' + error.message, 'error'); } }
+
+            // Event Listeners
+            document.getElementById("closeEditModal").onclick = () => document.getElementById('editTukangModal').classList.remove('show');
+            document.getElementById("saveEditTukangBtn").onclick = saveEditTukang;
+            document.getElementById("closeTransaksiModal").onclick = () => document.getElementById('transaksiModal').classList.remove('show');
+            document.getElementById("confirmTransaksiBtn").onclick = () => window.catatTransaksi();
+            document.getElementById("profilUsahaBtn").onclick = () => { document.getElementById("namaUsaha").value = usahaProfil.nama; document.getElementById("alamatUsaha").value = usahaProfil.alamat; document.getElementById("teleponUsaha").value = usahaProfil.telepon; document.getElementById("footerStruk").value = usahaProfil.footer; document.getElementById('profilUsahaModal').classList.add('show'); };
+            document.getElementById("closeProfilModal").onclick = () => document.getElementById('profilUsahaModal').classList.remove('show');
+            document.getElementById("saveProfilBtn").onclick = () => { usahaProfil.nama = document.getElementById("namaUsaha").value || "CarWash99"; usahaProfil.alamat = document.getElementById("alamatUsaha").value; usahaProfil.telepon = document.getElementById("teleponUsaha").value; usahaProfil.footer = document.getElementById("footerStruk").value || "Terima Kasih 🙏"; saveUsahaProfil(); document.getElementById('profilUsahaModal').classList.remove('show'); showToast('Profil usaha berhasil disimpan!', 'success'); };
+            document.getElementById("editProfilBtn").onclick = () => { document.getElementById("namaUsaha").value = usahaProfil.nama; document.getElementById("alamatUsaha").value = usahaProfil.alamat; document.getElementById("teleponUsaha").value = usahaProfil.telepon; document.getElementById("footerStruk").value = usahaProfil.footer; document.getElementById('profilUsahaModal').classList.add('show'); };
+            
+            // Staff management
+            document.getElementById("tambahStaffBtn").onclick = () => document.getElementById('tambahStaffModal').classList.add('show');
+            document.getElementById("closeStaffModal").onclick = () => document.getElementById('tambahStaffModal').classList.remove('show');
+            document.getElementById("confirmStaffBtn").onclick = async () => {
+                const email = document.getElementById("staffEmail").value.trim();
+                const role = document.getElementById("staffRole").value;
+                if (!email) { showToast('Masukkan email staf', 'error'); return; }
+                await addStaff(email, role);
+                document.getElementById('tambahStaffModal').classList.remove('show');
+                document.getElementById("staffEmail").value = '';
+            };
+            
+            document.getElementById("tambahLayananBtn").onclick = () => { if (currentUserRole !== 'owner') { showToast('Hanya owner yang bisa menambah layanan', 'error'); return; } let nama = prompt("Nama layanan:"); let harga = prompt("Harga:"); let jasa = prompt("Jasa tukang:"); if (nama && harga && jasa) addDoc(collection(db, "users", currentUser.uid, "layanan"), { nama, harga: parseInt(harga), jasaTukang: parseInt(jasa), createdAt: Timestamp.now() }).then(() => loadAllData()); };
+            document.getElementById("tambahTukangBtn").onclick = () => { if (currentUserRole !== 'owner') { showToast('Hanya owner yang bisa menambah tukang', 'error'); return; } let nama = prompt("Nama tukang:"); let wa = prompt("Nomor WhatsApp (62xxx):"); if (nama) addDoc(collection(db, "users", currentUser.uid, "tukang"), { nama, wa: wa || '', aktif: true, tanggalGabung: new Date().toISOString().split('T')[0] }).then(() => loadAllData()); };
+            document.getElementById("tambahBiayaBtn").onclick = () => { if (currentUserRole !== 'owner') { showToast('Hanya owner yang bisa menambah biaya', 'error'); return; } let kategori = prompt("Kategori:"); let nominal = prompt("Nominal:"); if (kategori && nominal) addDoc(collection(db, "users", currentUser.uid, "biaya"), { kategori, nominal: parseInt(nominal), tanggal: selectedDate, createdAt: Timestamp.now() }).then(() => loadAllData()); };
+            document.getElementById("tambahBiayaDariTabBtn").onclick = () => { if (currentUserRole !== 'owner') { showToast('Hanya owner yang bisa menambah biaya', 'error'); return; } let kategori = prompt("Kategori:"); let nominal = prompt("Nominal:"); if (kategori && nominal) addDoc(collection(db, "users", currentUser.uid, "biaya"), { kategori, nominal: parseInt(nominal), tanggal: selectedDate, createdAt: Timestamp.now() }).then(() => loadAllData()); };
+            
+            document.getElementById("prevDay").onclick = () => { let d = new Date(selectedDate); d.setDate(d.getDate() - 1); selectedDate = d.toISOString().split('T')[0]; renderDashboard(); renderLaporanTukang(); };
+            document.getElementById("nextDay").onclick = () => { let d = new Date(selectedDate); d.setDate(d.getDate() + 1); selectedDate = d.toISOString().split('T')[0]; renderDashboard(); renderLaporanTukang(); };
+            document.getElementById("todayBtn").onclick = () => { selectedDate = new Date().toISOString().split('T')[0]; renderDashboard(); renderLaporanTukang(); };
+            document.getElementById("leaderboardWeeklyBtn").onclick = () => { leaderboardPeriod = 'weekly'; renderLeaderboard(); };
+            document.getElementById("leaderboardMonthlyBtn").onclick = () => { leaderboardPeriod = 'monthly'; renderLeaderboard(); };
+            window.exportToPDF = function() { if (currentUserRole !== 'owner') { showToast('Hanya owner yang bisa download PDF', 'error'); return; } const stats = getStatsByDate(selectedDate); const gaji = getGajiTukang(); let html = `<div style="font-family:Arial;padding:15px;"><h1>${usahaProfil.nama}</h1><h2>Laporan Harian - ${selectedDate}</h2><p>Total Motor: ${stats.tm} | Total Mobil: ${stats.tb}</p><p>Pendapatan: ${formatRupiah(stats.pk)} | Gaji: ${formatRupiah(stats.jt)} | Biaya: ${formatRupiah(stats.totalBiaya)}</p><h3>Laba Bersih: ${formatRupiah(stats.laba)}</h3><h3>Daftar Transaksi</h3><table border="1"></table><th>Layanan</th><th>Plat</th><th>Tukang</th><th>Harga</th></tr>${stats.transaksiHari.map(t => `<tr><td>${t.namaLayanan}</td><td>${t.platNomor||'-'}</td><td>${t.namaTukang}</td><td>${formatRupiah(t.harga)}</td>`).join('')}</table><h3>Gaji Tukang</h3><table border="1"><tr><th>Nama</th><th>Total</th></tr>${Object.entries(gaji).map(([n, data]) => `<tr><td>${n}</td><td>${formatRupiah(data.total)}</td>`).join('')}</table></div>`; html2pdf().set({ margin: 0.5, filename: `Laporan_${selectedDate}.pdf` }).from(html).save(); };
+
+            // Auth state
+            function showAuthScreen() { document.getElementById("authScreen").style.display = "flex"; document.getElementById("appScreen").style.display = "none"; }
+            function showAppScreenAfterAuth() { 
+                document.getElementById("authScreen").style.display = "none"; 
+                document.getElementById("appScreen").style.display = "block"; 
+                document.getElementById("userName").textContent = currentUser.email;
+                loadUserRole().then(role => { currentUserRole = role; applyStaffRestrictions(); loadAllData(); loadStaffList(); });
+            }
+            
+            const loginBtn = document.getElementById("loginBtn");
+            const registerBtn = document.getElementById("registerBtn");
+            const showRegisterBtn = document.getElementById("showRegisterBtn");
+            const closeRegisterModal = document.getElementById("closeRegisterModal");
+            const confirmRegisterBtn = document.getElementById("confirmRegisterBtn");
+            const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
+            const sendResetLinkBtn = document.getElementById("sendResetLinkBtn");
+            
+            if (loginBtn) loginBtn.onclick = () => { const e = document.getElementById("loginEmail").value; const p = document.getElementById("loginPassword").value; signInWithEmailAndPassword(auth, e, p).then(() => showAppScreenAfterAuth()).catch(e => showToast('Login gagal: ' + e.message, 'error')); };
+            if (registerBtn) registerBtn.onclick = () => { const e = document.getElementById("registerEmail").value; const p = document.getElementById("registerPassword").value; createUserWithEmailAndPassword(auth, e, p).then(() => { showToast('Registrasi berhasil! Silakan login.', 'success'); document.getElementById('registerModal').classList.remove('show'); }).catch(e => showToast('Registrasi gagal: ' + e.message, 'error')); };
+            if (showRegisterBtn) showRegisterBtn.onclick = () => document.getElementById('registerModal').classList.add('show');
+            if (closeRegisterModal) closeRegisterModal.onclick = () => document.getElementById('registerModal').classList.remove('show');
+            if (confirmRegisterBtn) confirmRegisterBtn.onclick = () => { const e = document.getElementById("registerEmail").value; const p = document.getElementById("registerPassword").value; if (e && p.length >= 6) createUserWithEmailAndPassword(auth, e, p).then(() => { showToast('Registrasi berhasil!', 'success'); document.getElementById('registerModal').classList.remove('show'); }).catch(e => showToast('Gagal: ' + e.message, 'error')); else showToast('Email dan password minimal 6 karakter', 'error'); };
+            if (forgotPasswordBtn) forgotPasswordBtn.onclick = () => document.getElementById('forgotPasswordModal').classList.add('show');
+            if (sendResetLinkBtn) sendResetLinkBtn.onclick = () => { const e = document.getElementById("resetEmail").value; if (e) sendPasswordResetEmail(auth, e).then(() => { showToast('Link reset password telah dikirim', 'success'); document.getElementById('forgotPasswordModal').classList.remove('show'); }).catch(e => showToast('Gagal: ' + e.message, 'error')); else showToast('Masukkan email Anda', 'error'); };
+            
+            onAuthStateChanged(auth, (user) => { currentUser = user; if (user) showAppScreenAfterAuth(); else showAuthScreen(); });
+        }
+
+        // Partikel
+        function initParticles() {
+            const canvas = document.getElementById('particleCanvas');
+            if (!canvas) return;
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            const isMobile = window.matchMedia('(pointer: coarse)').matches;
+            const count = isMobile ? 20 : 50;
+            function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            resize();
+            window.addEventListener('resize', resize);
+            for (let i = 0; i < count; i++) {
+                particles.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: Math.random() * 2 + 0.5, vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2, opacity: Math.random() * 0.3 + 0.05, color: Math.random() > 0.7 ? '212,175,55' : '96,165,250' });
+            }
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0) p.x = canvas.width;
+                    if (p.x > canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = canvas.height;
+                    if (p.y > canvas.height) p.y = 0;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${p.color},${p.opacity})`;
+                    ctx.fill();
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        initParticles();
+
+        // Tab navigation
+        function initTabs() {
+            document.querySelectorAll('.tab-luxury').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tab = btn.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                    const activeTab = document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+                    if (activeTab) activeTab.style.display = 'block';
+                    document.querySelectorAll('.tab-luxury').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+        }
+        initTabs();
+    </script>
+
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="registerModal"><div class="modal-box"><div class="text-center mb-4"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);"><i class="fas fa-user-plus text-2xl" style="color:var(--gold);"></i></div></div><h3 class="font-display text-xl font-bold text-center mb-1">Daftar Akun Baru</h3><p class="text-center text-xs mb-5" style="color:var(--text-secondary);">Gratis selamanya</p><div class="space-y-3 mb-5"><input type="email" id="registerEmail" placeholder="Email anda" class="lux-input"><input type="password" id="registerPassword" placeholder="Buat password (min 8 karakter)" class="lux-input"></div><div class="flex gap-3"><button id="closeRegisterModal" class="flex-1 py-3 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button><button id="confirmRegisterBtn" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer">Daftar</button></div></div></div>
+
+    <div class="modal-overlay" id="forgotPasswordModal"><div class="modal-box"><div class="text-center mb-4"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);"><i class="fas fa-key text-2xl" style="color:var(--gold);"></i></div></div><h3 class="font-display text-xl font-bold text-center mb-1">Reset Password</h3><p class="text-center text-xs mb-5" style="color:var(--text-secondary);">Kami akan kirim link reset ke email Anda</p><div class="space-y-3 mb-5"><input type="email" id="resetEmail" placeholder="Email terdaftar" class="lux-input"></div><div class="flex gap-3"><button id="closeForgotModal" class="flex-1 py-3 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button><button id="sendResetLinkBtn" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer">Kirim Link</button></div></div></div>
+
+    <div id="authScreen" class="min-h-screen flex items-center justify-center p-4 relative z-10" style="display:none;">
+        <div class="glass-card gold-border p-8 max-w-md w-full">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-24 h-24 rounded-full mb-5" style="background:linear-gradient(135deg,rgba(37,99,235,0.15),rgba(212,175,55,0.12));border:2px solid rgba(212,175,55,0.2);"><i class="fas fa-car-side text-4xl" style="color:var(--gold);"></i></div>
+                <h1 class="font-display text-4xl font-black mb-2 shimmer-text">CarWash99</h1>
+                <p class="text-xs tracking-[4px] uppercase" style="color:var(--text-secondary);">Premium Car Wash Management</p>
+            </div>
+            <div class="mb-6">
+                <h2 class="text-xs font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider" style="color:var(--gold);"><span class="w-5 h-px" style="background:var(--gold);"></span>Masuk ke Akun<span class="flex-1 h-px" style="background:rgba(212,175,55,0.12);"></span></h2>
+                <input type="email" id="loginEmail" placeholder="Email anda" class="lux-input mb-3"><input type="password" id="loginPassword" placeholder="Password" class="lux-input mb-2"><div class="text-right mb-4"><button id="forgotPasswordBtn" class="text-xs cursor-pointer" style="color:var(--gold);opacity:0.6;">Lupa password?</button></div>
+                <button id="loginBtn" class="btn-blue w-full py-4 rounded-xl text-sm tracking-wide">MASUK</button>
+            </div>
+            <div class="gold-divider my-6"></div>
+            <div class="text-center"><p class="text-xs" style="color:var(--text-secondary);">Belum punya akun? <button id="showRegisterBtn" class="font-semibold cursor-pointer" style="color:var(--gold);">Daftar Sekarang</button></p></div>
+        </div>
+    </div>
+
+    <style>.shimmer-text { background: linear-gradient(90deg, var(--gold) 0%, #f5d98c 20%, #fff 40%, #f5d98c 60%, var(--gold) 80%, #f5d98c 100%); background-size: 300% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: shimmerText 5s linear infinite; } @keyframes shimmerText { 0% { background-position: -300% center; } 100% { background-position: 300% center; } }</style>
+</body>
+</html>

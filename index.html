@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CarWash99 - Manajemen Cuci Mobil Premium</title>
+    <meta name="description" content="Aplikasi manajemen cuci mobil premium dengan fitur lengkap">
+    <meta name="theme-color" content="#040a1a">
+    
+    <!-- Preconnect untuk performa -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- html2pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: { 
+                extend: { 
+                    colors: {
+                        navy: { 900: '#040a1a', 800: '#0a1128', 700: '#0d1b3e', 600: '#132456' },
+                        gold: { 300: '#f5d98c', 400: '#f0c040', 500: '#d4af37', 600: '#c9a227' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --bg-deep: #030810;
+            --bg-card: rgba(10, 22, 50, 0.5);
+            --border-glass: rgba(255, 255, 255, 0.06);
+            --border-gold: rgba(212, 175, 55, 0.3);
+            --gold: #d4af37;
+            --gold-light: #f0c040;
+            --text-primary: #eef2ff;
+            --text-secondary: #7b96c4;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        .font-display { font-family: 'Playfair Display', serif; }
+
+        /* Focus visible untuk accessibility */
+        *:focus-visible {
+            outline: 2px solid var(--gold);
+            outline-offset: 2px;
+        }
+
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.2); border-radius: 10px; }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 1;
+            opacity: 0.5;
+        }
+
+        #particleCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+        .mesh-bg {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background:
+                radial-gradient(ellipse 600px 400px at 15% 20%, rgba(37,99,235,0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 500px 500px at 85% 80%, rgba(212,175,55,0.08) 0%, transparent 70%),
+                radial-gradient(ellipse 400px 300px at 50% 50%, rgba(139,92,246,0.05) 0%, transparent 70%);
+            animation: meshShift 20s ease-in-out infinite alternate;
+        }
+        @keyframes meshShift {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(1deg); }
+            100% { transform: scale(1) rotate(-1deg); }
+        }
+
+        .glow-orb {
+            position: fixed; border-radius: 50%;
+            filter: blur(100px); pointer-events: none; z-index: 0;
+            animation: orbFloat 22s ease-in-out infinite;
+        }
+        .glow-orb.a { width: 450px; height: 450px; background: #2563eb; top: -150px; left: -150px; opacity: 0.1; }
+        .glow-orb.b { width: 380px; height: 380px; background: #d4af37; bottom: -120px; right: -120px; opacity: 0.08; }
+        .glow-orb.c { width: 250px; height: 250px; background: #7c3aed; top: 40%; left: 55%; opacity: 0.06; }
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(40px, -50px) scale(1.12); }
+            50% { transform: translate(-30px, 30px) scale(0.92); }
+            75% { transform: translate(50px, 40px) scale(1.06); }
+        }
+
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(28px);
+            border: 1px solid var(--border-glass);
+            border-radius: 22px;
+            transition: all 0.45s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+        }
+        .glass-card:hover {
+            border-color: rgba(212, 175, 55, 0.12);
+            box-shadow: 0 12px 48px rgba(59, 130, 246, 0.06);
+            transform: translateY(-1px);
+        }
+
+        .gold-border {
+            border: 1px solid var(--border-gold);
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #f0c040 100%);
+            color: #040a1a;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.35s ease;
+        }
+        .btn-gold:hover {
+            box-shadow: 0 8px 35px rgba(212, 175, 55, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-blue {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #2563eb 100%);
+            color: #fff;
+            font-weight: 600;
+            border: 1px solid rgba(96, 165, 250, 0.15);
+            cursor: pointer;
+            transition: all 0.35s ease;
+        }
+        .btn-blue:hover {
+            box-shadow: 0 8px 35px rgba(37, 99, 235, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .lux-input {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 15px 20px;
+            color: var(--text-primary);
+            font-size: 15px;
+            width: 100%;
+            outline: none;
+            transition: all 0.35s ease;
+        }
+        .lux-input::placeholder { color: rgba(123, 150, 196, 0.4); }
+        .lux-input:focus {
+            border-color: rgba(212, 175, 55, 0.5);
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.06);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .lux-input.error {
+            border-color: rgba(239, 68, 68, 0.6);
+        }
+
+        .tab-luxury {
+            padding: 10px 6px;
+            font-weight: 600;
+            font-size: 11px;
+            color: var(--text-secondary);
+            border-radius: 12px;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            transition: all 0.35s ease;
+        }
+        .tab-luxury.active {
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.08);
+            border: 1px solid rgba(212, 175, 55, 0.18);
+        }
+        .tab-luxury:not(.active):hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(3, 8, 16, 0.95);
+            backdrop-filter: blur(16px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.35s ease;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-box {
+            background: linear-gradient(155deg, #0d1b3e 0%, #060e22 100%);
+            border: 1px solid rgba(212, 175, 55, 0.18);
+            border-radius: 28px;
+            padding: 32px;
+            max-width: 420px;
+            width: 100%;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.show .modal-box {
+            transform: scale(1);
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: linear-gradient(135deg, #0d1b3e, #132456);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 18px;
+            padding: 14px 22px;
+            color: var(--text-primary);
+            font-size: 13px;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+        }
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .gold-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212,175,55,0.35), transparent);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(212,175,55,0.2);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+            #particleCanvas { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mesh-bg"></div>
+    <canvas id="particleCanvas"></canvas>
+    <div class="glow-orb a"></div>
+    <div class="glow-orb b"></div>
+    <div class="glow-orb c"></div>
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- MODAL REGISTER -->
+    <div class="modal-overlay" id="registerModal">
+        <div class="modal-box">
+            <div class="text-center mb-5">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);">
+                    <i class="fas fa-user-plus text-2xl" style="color:var(--gold);"></i>
+                </div>
+            </div>
+            <h3 class="font-display text-xl font-bold text-center mb-1">Daftar Akun Baru</h3>
+            <p class="text-center text-xs mb-6" style="color:var(--text-secondary);">Gratis selamanya</p>
+            <div class="space-y-3 mb-6">
+                <input type="email" id="registerEmail" placeholder="Email anda" class="lux-input" autocomplete="email">
+                <input type="password" id="registerPassword" placeholder="Buat password (min 8 karakter)" class="lux-input" autocomplete="new-password">
+            </div>
+            <div class="flex gap-3">
+                <button id="closeRegisterModal" class="flex-1 py-3 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button>
+                <button id="confirmRegisterBtn" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer">Daftar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL LUPA PASSWORD -->
+    <div class="modal-overlay" id="forgotPasswordModal">
+        <div class="modal-box">
+            <div class="text-center mb-5">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);">
+                    <i class="fas fa-key text-2xl" style="color:var(--gold);"></i>
+                </div>
+            </div>
+            <h3 class="font-display text-xl font-bold text-center mb-1">Reset Password</h3>
+            <p class="text-center text-xs mb-6" style="color:var(--text-secondary);">Kami akan kirim link reset ke email Anda</p>
+            <div class="space-y-3 mb-6">
+                <input type="email" id="resetEmail" placeholder="Email terdaftar" class="lux-input" autocomplete="email">
+            </div>
+            <div class="flex gap-3">
+                <button id="closeForgotModal" class="flex-1 py-3 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button>
+                <button id="sendResetLinkBtn" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer">Kirim Link</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUTH SCREEN -->
+    <div id="authScreen" class="min-h-screen flex items-center justify-center p-4 relative z-10" style="display:flex;">
+        <div class="glass-card gold-border p-8 max-w-md w-full">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-24 h-24 rounded-full mb-5" style="background:linear-gradient(135deg,rgba(37,99,235,0.15),rgba(212,175,55,0.12));border:2px solid rgba(212,175,55,0.2);">
+                    <i class="fas fa-car-side text-4xl" style="color:var(--gold);"></i>
+                </div>
+                <h1 class="font-display text-5xl font-black mb-2" style="background:linear-gradient(135deg,var(--gold),#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">CarWash99</h1>
+                <p class="text-xs tracking-[4px] uppercase" style="color:var(--text-secondary);">Premium Car Wash Management</p>
+            </div>
+
+            <!-- FORM LOGIN -->
+            <div class="mb-6">
+                <h2 class="text-xs font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider" style="color:var(--gold);">
+                    <span class="w-5 h-px" style="background:var(--gold);"></span>Masuk ke Akun
+                    <span class="flex-1 h-px" style="background:rgba(212,175,55,0.12);"></span>
+                </h2>
+                <input type="email" id="loginEmail" placeholder="Email anda" class="lux-input mb-3" autocomplete="email">
+                <input type="password" id="loginPassword" placeholder="Password" class="lux-input mb-2" autocomplete="current-password">
+                <div class="text-right mb-4">
+                    <button id="forgotPasswordBtn" class="text-xs cursor-pointer" style="color:var(--gold);opacity:0.6;background:none;border:none;">Lupa password?</button>
+                </div>
+                <button id="loginBtn" class="btn-blue w-full py-4 rounded-xl text-sm tracking-wide">MASUK</button>
+            </div>
+
+            <div class="gold-divider my-6"></div>
+
+            <div class="text-center">
+                <p class="text-xs" style="color:var(--text-secondary);">
+                    Belum punya akun?
+                    <button id="showRegisterBtn" class="font-semibold cursor-pointer" style="color:var(--gold);background:none;border:none;">Daftar Sekarang</button>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== APP SCREEN ==================== -->
+    <div id="appScreen" class="max-w-md mx-auto pb-28 relative z-10" style="display:none;">
+        <!-- Header -->
+        <header class="sticky top-0 z-50 px-4 pt-4 pb-0">
+            <div class="glass-card gold-border p-5" style="border-radius:0 0 28px 28px;border-top:none;">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background:linear-gradient(135deg,rgba(212,175,55,0.18),rgba(37,99,235,0.15));border:1px solid rgba(212,175,55,0.15);">
+                            <i class="fas fa-car-side" style="color:var(--gold);font-size:18px;"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-display text-lg font-bold" style="background:linear-gradient(135deg,var(--gold),#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">CarWash99</h1>
+                            <p class="text-xs" style="color:var(--text-secondary);">Halo, <span id="userName" class="font-semibold" style="color:var(--gold-light);"></span></p>
+                        </div>
+                    </div>
+                    <button id="logoutBtn" class="px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Keluar</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Transaksi Cepat -->
+        <section class="px-4 mt-5">
+            <div class="flex items-center gap-2 mb-3">
+                <i class="fas fa-bolt text-sm" style="color:var(--gold);"></i>
+                <h2 class="font-display text-base font-bold">Transaksi Cepat</h2>
+            </div>
+            <div id="transaksiButtons" class="grid grid-cols-2 gap-3">
+                <div class="glass-card p-6 col-span-2 text-center">Memuat...</div>
+            </div>
+        </section>
+
+        <!-- TABS -->
+        <nav class="px-4 mt-5">
+            <div class="glass-card p-1.5 flex gap-1" style="border-radius:16px;">
+                <button class="tab-luxury active flex-1" data-tab="dashboard"><i class="fas fa-chart-line mr-1"></i>Dashboard</button>
+                <button class="tab-luxury flex-1" data-tab="layanan"><i class="fas fa-tags mr-1"></i>Layanan</button>
+                <button class="tab-luxury flex-1" data-tab="tukang"><i class="fas fa-users mr-1"></i>Tukang</button>
+                <button class="tab-luxury flex-1" data-tab="biaya"><i class="fas fa-receipt mr-1"></i>Biaya</button>
+                <button class="tab-luxury flex-1" data-tab="laporanTukang"><i class="fas fa-money-bill mr-1"></i>Gaji</button>
+            </div>
+        </nav>
+
+        <!-- DASHBOARD -->
+        <div id="tabDashboard" class="tab-content px-4 mt-4 space-y-4">
+            <div class="glass-card p-4">
+                <div class="flex justify-between items-center">
+                    <button id="prevDay" class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);color:var(--text-secondary);"><i class="fas fa-chevron-left text-sm"></i></button>
+                    <span id="selectedDate" class="font-semibold text-sm" style="color:var(--gold-light);"></span>
+                    <button id="nextDay" class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);color:var(--text-secondary);"><i class="fas fa-chevron-right text-sm"></i></button>
+                </div>
+                <div class="flex justify-between items-center mt-3">
+                    <button id="todayBtn" class="text-xs font-semibold cursor-pointer" style="color:var(--gold);background:none;border:none;">Hari Ini</button>
+                    <button onclick="exportToPDF()" class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer" style="background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.18);color:var(--gold);"><i class="fas fa-file-pdf mr-1.5"></i>Unduh PDF</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="glass-card p-4 text-center"><i class="fas fa-motorcycle text-xl mb-2" style="color:#60a5fa;"></i><p class="text-2xl font-bold" id="totalMotor">0</p><p class="text-xs">Total Motor</p></div>
+                <div class="glass-card p-4 text-center"><i class="fas fa-car text-xl mb-2" style="color:#34d399;"></i><p class="text-2xl font-bold" id="totalMobil">0</p><p class="text-xs">Total Mobil</p></div>
+                <div class="glass-card p-4 text-center"><i class="fas fa-coins text-xl mb-2" style="color:var(--gold);"></i><p class="text-lg font-bold" id="pendapatanKotor">Rp0</p><p class="text-xs">Pendapatan Kotor</p></div>
+                <div class="glass-card p-4 text-center"><i class="fas fa-chart-pie text-xl mb-2" style="color:#a78bfa;"></i><p class="text-lg font-bold" id="labaBersih">Rp0</p><p class="text-xs">Laba Bersih</p></div>
+            </div>
+
+            <div class="glass-card p-4">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-sm font-semibold"><i class="fas fa-truck mr-2" style="color:#f87171;"></i>Biaya Operasional</span>
+                    <button id="tambahBiayaBtn" class="btn-gold px-3 py-1.5 rounded-lg text-xs"><i class="fas fa-plus mr-1"></i>Tambah</button>
+                </div>
+                <div id="biayaOperasionalList" class="max-h-28 overflow-y-auto"></div>
+                <div class="mt-3 pt-3 flex justify-between border-t border-white/10"><span class="text-xs">Total Biaya</span><span id="totalBiayaOperasional" class="font-bold text-red-400">Rp0</span></div>
+            </div>
+
+            <div class="glass-card p-4"><div style="height:200px;"><canvas id="profitChart"></canvas></div></div>
+
+            <div class="glass-card p-4">
+                <div class="flex justify-between items-center mb-3"><span class="text-sm font-semibold"><i class="fas fa-money-bill-wave mr-2"></i>Gaji Tukang</span><span id="totalGajiTukang" class="font-bold text-sm" style="color:var(--gold);">Rp0</span></div>
+                <div id="gajiTukangList" class="max-h-40 overflow-y-auto"></div>
+            </div>
+
+            <div class="glass-card p-4"><h3 class="text-sm font-semibold mb-3"><i class="fas fa-receipt mr-2"></i>Transaksi Hari Ini</h3><div id="transaksiHariIni"></div></div>
+        </div>
+
+        <!-- LAYANAN -->
+        <div id="tabLayanan" class="tab-content px-4 mt-4" style="display:none;">
+            <div class="flex justify-between items-center mb-4"><h2 class="font-display text-base font-bold"><i class="fas fa-tags mr-2"></i>Layanan</h2><button id="tambahLayananBtn" class="btn-gold px-4 py-2 rounded-xl text-xs">+ Tambah</button></div>
+            <div id="layananList" class="space-y-3"></div>
+        </div>
+
+        <!-- TUKANG -->
+        <div id="tabTukang" class="tab-content px-4 mt-4" style="display:none;">
+            <div class="flex justify-between items-center mb-4"><h2 class="font-display text-base font-bold"><i class="fas fa-users mr-2"></i>Tukang</h2><button id="tambahTukangBtn" class="btn-gold px-4 py-2 rounded-xl text-xs">+ Tambah</button></div>
+            <div id="tukangList" class="space-y-3"></div>
+        </div>
+
+        <!-- BIAYA -->
+        <div id="tabBiaya" class="tab-content px-4 mt-4" style="display:none;">
+            <div class="flex justify-between items-center mb-4"><h2 class="font-display text-base font-bold"><i class="fas fa-receipt mr-2"></i>Riwayat Biaya</h2><button id="tambahBiayaDariTabBtn" class="btn-gold px-4 py-2 rounded-xl text-xs">+ Tambah</button></div>
+            <div id="riwayatBiayaList" class="space-y-3"></div>
+        </div>
+
+        <!-- GAJI -->
+        <div id="tabLaporanTukang" class="tab-content px-4 mt-4" style="display:none;">
+            <h2 class="font-display text-base font-bold mb-4"><i class="fas fa-money-bill-wave mr-2"></i>Rekap Gaji Tukang</h2>
+            <div id="laporanTukangDetail" class="space-y-3"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, limit, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCFXSdwMp3WaUDGeYj2m4Q-l49TYs_LRR0",
+            authDomain: "carwash-99.firebaseapp.com",
+            projectId: "carwash-99",
+            storageBucket: "carwash-99.firebasestorage.app",
+            messagingSenderId: "617166626443",
+            appId: "1:617166626443:web:b030f30fd51c3b8eb2fe8e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // ===== STATE =====
+        let currentUser = null;
+        let layananList = [];
+        let tukangList = [];
+        let transaksiList = [];
+        let biayaList = [];
+        let chartInstance = null;
+        let selectedDate = new Date().toISOString().split('T')[0];
+
+        // ===== UTILITY =====
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+            toast.innerHTML = `${icons[type]} ${message}`;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        function formatRupiah(amount) {
+            return `Rp${amount.toLocaleString('id-ID')}`;
+        }
+
+        // ===== PARTIKEL =====
+        function initParticles() {
+            const canvas = document.getElementById('particleCanvas');
+            if (!canvas) return;
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            const isMobile = window.matchMedia('(pointer: coarse)').matches;
+            const count = isMobile ? 20 : 50;
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 0.5,
+                    vx: (Math.random() - 0.5) * 0.2,
+                    vy: (Math.random() - 0.5) * 0.2,
+                    opacity: Math.random() * 0.3 + 0.05,
+                    color: Math.random() > 0.7 ? '212,175,55' : '96,165,250'
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0) p.x = canvas.width;
+                    if (p.x > canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = canvas.height;
+                    if (p.y > canvas.height) p.y = 0;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${p.color},${p.opacity})`;
+                    ctx.fill();
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // ===== MODAL =====
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.classList.add('show');
+        }
+
+        function hideModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.classList.remove('show');
+        }
+
+        // ===== AUTH =====
+        function showAuthScreen() {
+            document.getElementById("authScreen").style.display = "flex";
+            document.getElementById("appScreen").style.display = "none";
+        }
+
+        function showAppScreen() {
+            document.getElementById("authScreen").style.display = "none";
+            document.getElementById("appScreen").style.display = "block";
+            document.getElementById("userName").textContent = currentUser.email;
+            loadAllData();
+        }
+
+        async function handleLogin(email, password) {
+            if (!email || !password) {
+                showToast('Isi email dan password', 'error');
+                return;
+            }
+            if (password.length < 8) {
+                showToast('Password minimal 8 karakter', 'error');
+                return;
+            }
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showToast('Selamat datang!', 'success');
+            } catch (error) {
+                let msg = 'Login gagal';
+                if (error.code === 'auth/user-not-found') msg = 'Email tidak terdaftar';
+                else if (error.code === 'auth/wrong-password') msg = 'Password salah';
+                else if (error.code === 'auth/invalid-email') msg = 'Format email tidak valid';
+                else msg = error.message;
+                showToast(msg, 'error');
+            }
+        }
+
+        async function handleRegister(email, password) {
+            if (!email || !password) {
+                showToast('Isi email dan password', 'error');
+                return;
+            }
+            if (password.length < 8) {
+                showToast('Password minimal 8 karakter', 'error');
+                return;
+            }
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                showToast('Registrasi berhasil! Silakan login.', 'success');
+                hideModal('registerModal');
+                document.getElementById('registerEmail').value = '';
+                document.getElementById('registerPassword').value = '';
+            } catch (error) {
+                let msg = 'Registrasi gagal';
+                if (error.code === 'auth/email-already-in-use') msg = 'Email sudah terdaftar';
+                else if (error.code === 'auth/invalid-email') msg = 'Format email tidak valid';
+                else msg = error.message;
+                showToast(msg, 'error');
+            }
+        }
+
+        async function handleResetPassword(email) {
+            if (!email) {
+                showToast('Masukkan email Anda', 'error');
+                return;
+            }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showToast('Link reset password telah dikirim ke email Anda', 'success');
+                hideModal('forgotPasswordModal');
+                document.getElementById('resetEmail').value = '';
+            } catch (error) {
+                showToast('Gagal: ' + error.message, 'error');
+            }
+        }
+
+        async function handleLogout() {
+            await signOut(auth);
+            showToast('Berhasil keluar', 'info');
+        }
+
+        // ===== LOAD DATA =====
+        async function loadAllData() {
+            if (!currentUser) return;
+            await Promise.all([
+                loadLayanan(),
+                loadTukang(),
+                loadTransaksi(),
+                loadBiaya()
+            ]);
+            renderDashboard();
+            renderLayananList();
+            renderTukangList();
+            renderTransaksiButtons();
+            renderLaporanTukang();
+            renderRiwayatBiaya();
+        }
+
+        async function loadLayanan() {
+            const snapshot = await getDocs(collection(db, "users", currentUser.uid, "layanan"));
+            layananList = [];
+            snapshot.forEach(doc => layananList.push({ id: doc.id, ...doc.data() }));
+        }
+
+        async function loadTukang() {
+            const snapshot = await getDocs(collection(db, "users", currentUser.uid, "tukang"));
+            tukangList = [];
+            snapshot.forEach(doc => tukangList.push({ id: doc.id, ...doc.data() }));
+        }
+
+        async function loadTransaksi() {
+            const q = query(collection(db, "users", currentUser.uid, "transaksi"), orderBy('timestamp', 'desc'), limit(200));
+            const snapshot = await getDocs(q);
+            transaksiList = [];
+            snapshot.forEach(doc => transaksiList.push({ id: doc.id, ...doc.data() }));
+        }
+
+        async function loadBiaya() {
+            const snapshot = await getDocs(collection(db, "users", currentUser.uid, "biaya"));
+            biayaList = [];
+            snapshot.forEach(doc => biayaList.push({ id: doc.id, ...doc.data() }));
+        }
+
+        // ===== STATISTIK =====
+        function getStatsByDate(date) {
+            const th = transaksiList.filter(t => t.tanggal === date);
+            const by = biayaList.filter(b => b.tanggal === date);
+            let tm = 0, tb = 0, pk = 0, jt = 0;
+            th.forEach(t => {
+                pk += t.harga;
+                jt += t.jasaTukang;
+                if (t.namaLayanan.toLowerCase().includes("motor")) tm++;
+                if (t.namaLayanan.toLowerCase().includes("mobil")) tb++;
+            });
+            const totalBiaya = by.reduce((s, b) => s + b.nominal, 0);
+            return { tm, tb, pk, jt, totalBiaya, laba: pk - jt - totalBiaya, transaksiHari: th, biayaHari: by };
+        }
+
+        function getGajiTukang() {
+            let gaji = {};
+            transaksiList.forEach(t => {
+                if (!gaji[t.namaTukang]) gaji[t.namaTukang] = 0;
+                gaji[t.namaTukang] += t.jasaTukang;
+            });
+            return gaji;
+        }
+
+        function getWeeklyData() {
+            let data = {};
+            for (let i = 6; i >= 0; i--) {
+                let d = new Date();
+                d.setDate(d.getDate() - i);
+                let ds = d.toISOString().split('T')[0];
+                data[ds] = getStatsByDate(ds).laba;
+            }
+            return data;
+        }
+
+        // ===== RENDER =====
+        function renderDashboard() {
+            const stats = getStatsByDate(selectedDate);
+            const gaji = getGajiTukang();
+            
+            document.getElementById("totalMotor").textContent = stats.tm;
+            document.getElementById("totalMobil").textContent = stats.tb;
+            document.getElementById("pendapatanKotor").innerHTML = formatRupiah(stats.pk);
+            document.getElementById("labaBersih").innerHTML = formatRupiah(stats.laba);
+            
+            let biayaHtml = stats.biayaHari.map(b => `<div class="flex justify-between py-1 text-xs"><span>${b.kategori}</span><span class="text-red-400">-${formatRupiah(b.nominal)}</span></div>`).join('');
+            document.getElementById("biayaOperasionalList").innerHTML = biayaHtml || '<p class="text-xs text-center text-gray-400">Belum ada biaya</p>';
+            document.getElementById("totalBiayaOperasional").textContent = formatRupiah(stats.totalBiaya);
+            
+            let gajiHtml = Object.entries(gaji).map(([n, j]) => `<div class="flex justify-between py-1 text-xs"><span>${n}</span><span class="text-green-400">${formatRupiah(j)}</span></div>`).join('');
+            document.getElementById("gajiTukangList").innerHTML = gajiHtml || '<p class="text-xs text-center">Belum ada transaksi</p>';
+            document.getElementById("totalGajiTukang").textContent = formatRupiah(Object.values(gaji).reduce((a,b)=>a+b,0));
+            
+            if (chartInstance) chartInstance.destroy();
+            const weekly = getWeeklyData();
+            const ctx = document.getElementById("profitChart").getContext("2d");
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Object.keys(weekly).map(d => d.slice(5)),
+                    datasets: [{
+                        label: 'Laba Bersih',
+                        data: Object.values(weekly),
+                        borderColor: '#d4af37',
+                        backgroundColor: 'rgba(212,175,55,0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+            
+            let trHtml = stats.transaksiHari.map(t => `<div class="flex justify-between py-1 text-xs border-b border-white/10"><span>${t.namaLayanan} (${t.platNomor || '-'})<br><span class="text-gray-400">${t.namaTukang}</span></span><span>${formatRupiah(t.harga)}</span></div>`).join('');
+            document.getElementById("transaksiHariIni").innerHTML = trHtml || '<p class="text-xs text-center">Belum ada transaksi</p>';
+            document.getElementById("selectedDate").innerHTML = selectedDate;
+        }
+
+        function renderLayananList() {
+            const container = document.getElementById("layananList");
+            if (!container) return;
+            if (layananList.length === 0) {
+                container.innerHTML = '<div class="glass-card p-6 text-center"><p class="text-sm">Belum ada layanan</p></div>';
+                return;
+            }
+            container.innerHTML = layananList.map(l => `
+                <div class="glass-card p-3 flex justify-between items-center">
+                    <div><p class="font-bold">${l.nama}</p><p class="text-xs">Harga: ${formatRupiah(l.harga)} | Jasa: ${formatRupiah(l.jasaTukang)}</p></div>
+                    <button onclick="hapusLayanan('${l.id}')" class="text-red-400 text-sm">Hapus</button>
+                </div>
+            `).join('');
+        }
+
+        function renderTukangList() {
+            const container = document.getElementById("tukangList");
+            if (!container) return;
+            if (tukangList.length === 0) {
+                container.innerHTML = '<div class="glass-card p-6 text-center"><p class="text-sm">Belum ada tukang</p></div>';
+                return;
+            }
+            container.innerHTML = tukangList.map(t => `
+                <div class="glass-card p-3 flex justify-between items-center">
+                    <div><p class="font-bold">${t.nama}</p><p class="text-xs">Bergabung: ${t.tanggalGabung}</p></div>
+                    <button onclick="hapusTukang('${t.id}')" class="text-red-400 text-sm">Hapus</button>
+                </div>
+            `).join('');
+        }
+
+        function renderRiwayatBiaya() {
+            const container = document.getElementById("riwayatBiayaList");
+            if (!container) return;
+            if (biayaList.length === 0) {
+                container.innerHTML = '<div class="glass-card p-6 text-center"><p class="text-sm">Belum ada biaya</p></div>';
+                return;
+            }
+            const byDate = {};
+            biayaList.forEach(b => { if (!byDate[b.tanggal]) byDate[b.tanggal] = []; byDate[b.tanggal].push(b); });
+            container.innerHTML = Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0])).map(([tgl, items]) => `
+                <div class="glass-card p-3">
+                    <div class="flex justify-between mb-2"><span class="font-bold">${tgl}</span><span class="text-red-400">-${formatRupiah(items.reduce((s,i)=>s+i.nominal,0))}</span></div>
+                    ${items.map(i => `<div class="flex justify-between text-xs py-1 border-b border-white/10"><span>${i.kategori}</span><span>-${formatRupiah(i.nominal)}</span><button onclick="hapusBiaya('${i.id}')" class="text-red-400">Hapus</button></div>`).join('')}
+                </div>
+            `).join('');
+        }
+
+        function renderLaporanTukang() {
+            const container = document.getElementById("laporanTukangDetail");
+            if (!container) return;
+            let gajiDetail = {};
+            transaksiList.forEach(t => {
+                if (!gajiDetail[t.namaTukang]) gajiDetail[t.namaTukang] = { total: 0, transaksi: [] };
+                gajiDetail[t.namaTukang].total += t.jasaTukang;
+                gajiDetail[t.namaTukang].transaksi.push({ tanggal: t.tanggal, layanan: t.namaLayanan, harga: t.harga, plat: t.platNomor || '-' });
+            });
+            if (Object.keys(gajiDetail).length === 0) {
+                container.innerHTML = '<div class="glass-card p-6 text-center"><p class="text-sm">Belum ada transaksi</p></div>';
+                return;
+            }
+            container.innerHTML = Object.entries(gajiDetail).map(([nama, data]) => `
+                <div class="glass-card p-3">
+                    <div class="flex justify-between items-center mb-2"><span class="font-bold">${nama}</span><span class="text-green-400">${formatRupiah(data.total)}</span></div>
+                    ${data.transaksi.slice(-10).reverse().map(t => `<div class="flex justify-between text-xs py-1 border-b border-white/10"><span>${t.tanggal.slice(5)} - ${t.layanan}</span><span>${formatRupiah(t.harga)}</span><span class="text-gray-400">${t.plat}</span></div>`).join('')}
+                </div>
+            `).join('');
+        }
+
+        function renderTransaksiButtons() {
+            const container = document.getElementById("transaksiButtons");
+            if (!container) return;
+            if (layananList.length === 0) {
+                container.innerHTML = '<div class="glass-card p-6 col-span-2 text-center"><p class="text-sm">Tambahkan layanan dulu</p></div>';
+                return;
+            }
+            if (tukangList.length === 0) {
+                container.innerHTML = '<div class="glass-card p-6 col-span-2 text-center"><p class="text-sm text-yellow-400">Tambahkan tukang dulu</p></div>';
+                return;
+            }
+            container.innerHTML = layananList.map(l => `
+                <button onclick="pilihLayanan('${l.id}', '${l.nama}', ${l.harga}, ${l.jasaTukang})" class="glass-card p-4 text-center hover:border-gold transition">
+                    <i class="fas fa-soap text-2xl mb-2" style="color:var(--gold);"></i>
+                    <p class="font-bold text-sm">${l.nama}</p>
+                    <p class="text-xs text-gold">${formatRupiah(l.harga)}</p>
+                </button>
+            `).join('');
+        }
+
+        // ===== CRUD =====
+        window.pilihLayanan = async function(id, nama, harga, jasa) {
+            const plat = prompt('Masukkan plat nomor kendaraan\nContoh: B 1234 CD');
+            if (!plat || !plat.trim()) {
+                showToast('Plat nomor wajib diisi', 'error');
+                return;
+            }
+            let options = tukangList.map((t, i) => `${i+1}. ${t.nama}`).join('\n');
+            let pilihan = prompt(`Pilih tukang untuk ${nama}:\n${options}\n\nMasukkan nomor:`);
+            let index = parseInt(pilihan) - 1;
+            if (index >= 0 && index < tukangList.length) {
+                try {
+                    await addDoc(collection(db, "users", currentUser.uid, "transaksi"), {
+                        layananId: id, namaLayanan: nama, harga, jasaTukang: jasa,
+                        tukangId: tukangList[index].id, namaTukang: tukangList[index].nama,
+                        platNomor: plat.toUpperCase(), tanggal: new Date().toISOString().split('T')[0],
+                        timestamp: Timestamp.now()
+                    });
+                    showToast(`✅ ${nama} - ${plat.toUpperCase()}`, 'success');
+                    await loadAllData();
+                } catch (error) {
+                    showToast('Gagal mencatat transaksi', 'error');
+                }
+            } else {
+                showToast('Pilihan tidak valid', 'error');
+            }
+        };
+
+        window.hapusLayanan = async function(id) {
+            if (confirm('Hapus layanan ini?')) {
+                await deleteDoc(doc(db, "users", currentUser.uid, "layanan", id));
+                showToast('Layanan dihapus', 'info');
+                loadAllData();
+            }
+        };
+
+        window.hapusTukang = async function(id) {
+            if (confirm('Hapus tukang ini?')) {
+                await deleteDoc(doc(db, "users", currentUser.uid, "tukang", id));
+                showToast('Tukang dihapus', 'info');
+                loadAllData();
+            }
+        };
+
+        window.hapusBiaya = async function(id) {
+            if (confirm('Hapus biaya ini?')) {
+                await deleteDoc(doc(db, "users", currentUser.uid, "biaya", id));
+                showToast('Biaya dihapus', 'info');
+                loadAllData();
+            }
+        };
+
+        async function tambahLayanan(nama, harga, jasa) {
+            await addDoc(collection(db, "users", currentUser.uid, "layanan"), {
+                nama, harga: parseInt(harga), jasaTukang: parseInt(jasa),
+                createdAt: Timestamp.now()
+            });
+            showToast(`"${nama}" ditambahkan`, 'success');
+            loadAllData();
+        }
+
+        async function tambahTukang(nama) {
+            await addDoc(collection(db, "users", currentUser.uid, "tukang"), {
+                nama, aktif: true, tanggalGabung: new Date().toISOString().split('T')[0]
+            });
+            showToast(`"${nama}" ditambahkan`, 'success');
+            loadAllData();
+        }
+
+        async function tambahBiaya(kategori, nominal) {
+            await addDoc(collection(db, "users", currentUser.uid, "biaya"), {
+                kategori, nominal: parseInt(nominal), tanggal: selectedDate,
+                createdAt: Timestamp.now()
+            });
+            showToast(`"${kategori}" ditambahkan`, 'success');
+            loadAllData();
+        }
+
+        window.exportToPDF = function() {
+            const stats = getStatsByDate(selectedDate);
+            const gaji = getGajiTukang();
+            let html = `<div style="font-family:Arial;padding:20px;"><h1 style="color:#d4af37;">CarWash99</h1><h2>Laporan Harian - ${selectedDate}</h2>`;
+            html += `<p>Total Motor: ${stats.tm} | Total Mobil: ${stats.tb}</p>`;
+            html += `<p>Pendapatan: ${formatRupiah(stats.pk)} | Gaji: ${formatRupiah(stats.jt)} | Biaya: ${formatRupiah(stats.totalBiaya)}</p>`;
+            html += `<h3>Laba Bersih: ${formatRupiah(stats.laba)}</h3>`;
+            html += `<h3>Daftar Transaksi</h3><table border="1" cellpadding="5"><tr><th>Layanan</th><th>Plat</th><th>Tukang</th><th>Harga</th></tr>`;
+            stats.transaksiHari.forEach(t => html += `<tr><td>${t.namaLayanan}</td><td>${t.platNomor||'-'}</td><td>${t.namaTukang}</td><td>${formatRupiah(t.harga)}</td></tr>`);
+            html += `</table><h3>Gaji Tukang</h3><table border="1" cellpadding="5"><tr><th>Nama</th><th>Total</th></tr>`;
+            Object.entries(gaji).forEach(([n,j]) => html += `<tr><td>${n}</td><td>${formatRupiah(j)}</td></tr>`);
+            html += `</table></div>`;
+            html2pdf().set({ margin: 0.5, filename: `Laporan_${selectedDate}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4' } }).from(html).save();
+            showToast('PDF berhasil diunduh', 'success');
+        };
+
+        function changeDate(days) {
+            let d = new Date(selectedDate);
+            d.setDate(d.getDate() + days);
+            selectedDate = d.toISOString().split('T')[0];
+            renderDashboard();
+        }
+
+        // ===== EVENT LISTENERS =====
+        function initEventListeners() {
+            // Login
+            document.getElementById("loginBtn").onclick = () => {
+                const email = document.getElementById("loginEmail").value.trim();
+                const password = document.getElementById("loginPassword").value;
+                handleLogin(email, password);
+            };
+            
+            // Register modal
+            document.getElementById("showRegisterBtn").onclick = () => showModal('registerModal');
+            document.getElementById("closeRegisterModal").onclick = () => hideModal('registerModal');
+            document.getElementById("confirmRegisterBtn").onclick = () => {
+                const email = document.getElementById("registerEmail").value.trim();
+                const password = document.getElementById("registerPassword").value;
+                handleRegister(email, password);
+            };
+            
+            // Forgot password
+            document.getElementById("forgotPasswordBtn").onclick = () => showModal('forgotPasswordModal');
+            document.getElementById("closeForgotModal").onclick = () => hideModal('forgotPasswordModal');
+            document.getElementById("sendResetLinkBtn").onclick = () => {
+                const email = document.getElementById("resetEmail").value.trim();
+                handleResetPassword(email);
+            };
+            
+            // Logout
+            document.getElementById("logoutBtn").onclick = handleLogout;
+            
+            // Tambah buttons
+            document.getElementById("tambahLayananBtn").onclick = () => {
+                let nama = prompt("Nama layanan:");
+                let harga = prompt("Harga untuk konsumen:");
+                let jasa = prompt("Jasa untuk tukang:");
+                if (nama && harga && jasa) tambahLayanan(nama, harga, jasa);
+            };
+            
+            document.getElementById("tambahTukangBtn").onclick = () => {
+                let nama = prompt("Nama tukang:");
+                if (nama) tambahTukang(nama);
+            };
+            
+            const biayaHandler = () => {
+                let kategori = prompt("Kategori (Sabun/Air/Listrik/dll):");
+                let nominal = prompt("Nominal (Rp):");
+                if (kategori && nominal) tambahBiaya(kategori, nominal);
+            };
+            document.getElementById("tambahBiayaBtn").onclick = biayaHandler;
+            document.getElementById("tambahBiayaDariTabBtn").onclick = biayaHandler;
+            
+            // Date navigation
+            document.getElementById("prevDay").onclick = () => changeDate(-1);
+            document.getElementById("nextDay").onclick = () => changeDate(1);
+            document.getElementById("todayBtn").onclick = () => {
+                selectedDate = new Date().toISOString().split('T')[0];
+                renderDashboard();
+            };
+        }
+
+        function initTabs() {
+            document.querySelectorAll('.tab-luxury').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tab = btn.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                    document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).style.display = 'block';
+                    document.querySelectorAll('.tab-luxury').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    if (tab === 'dashboard') renderDashboard();
+                    if (tab === 'laporanTukang') renderLaporanTukang();
+                    if (tab === 'biaya') renderRiwayatBiaya();
+                });
+            });
+        }
+
+        // ===== AUTH STATE =====
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                showAppScreen();
+            } else {
+                showAuthScreen();
+            }
+        });
+
+        // ===== INIT =====
+        document.addEventListener("DOMContentLoaded", () => {
+            initParticles();
+            initEventListeners();
+            initTabs();
+        });
+    </script>
+</body>
+  </html>

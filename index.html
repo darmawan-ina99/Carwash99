@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CuciBersih - Manajemen Cucian Modern</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js untuk grafik -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- html2pdf untuk export PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        // ============ FIREBASE CONFIG (milik Anda) ============
+        const firebaseConfig = {
+            apiKey: "AIzaSyCFXSdwMp3WaUDGeYj2m4Q-l49TYs_LRR0",
+            authDomain: "carwash-99.firebaseapp.com",
+            projectId: "carwash-99",
+            storageBucket: "carwash-99.firebasestorage.app",
+            messagingSenderId: "617166626443",
+            appId: "1:617166626443:web:b030f30fd51c3b8eb2fe8e"
+        };
+        
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        console.log("Firebase siap!");
+        
+        // ============ STATE GLOBAL ============
+        let currentUser = null;
+        let layananList = [];
+        let tukangList = [];
+        let transaksiList = [];
+        let chartInstance = null;
+        let selectedDate = new Date().toISOString().split('T')[0];
+        
+        // ============ AUTHENTICATION ============
+        function showAuthScreen() {
+            document.getElementById("authScreen").style.display = "flex";
+            document.getElementById("appScreen").style.display = "none";
+        }
+        
+        function showAppScreen() {
+            document.getElementById("authScreen").style.display = "none";
+            document.getElementById("appScreen").style.display = "block";
+            document.getElementById("userName").textContent = currentUser.email;
+            loadAllData();
+        }
+        
+        async function handleLogin(email, password) {
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                alert("Login berhasil!");
+            } catch (error) {
+                alert("Login gagal: " + error.message);
+            }
+        }
+        
+        async function handleRegister(email, password) {
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                alert("Registrasi berhasil! Silakan login.");
+            } catch (error) {
+                alert("Registrasi gagal: " + error.message);
+            }
+        }
+        
+        async function handleLogout() {
+            await signOut(auth);
+        }
+        
+        // ============ LOAD ALL DATA ============
+        async function loadAllData() {
+            if (!currentUser) return;
+            await loadLayanan();
+            await loadTukang();
+            await loadTransaksi();
+            renderDashboard();
+            renderLayananList();
+            renderTukangList();
+            renderTransaksiButtons();
+        }
+        
+        async function loadLayanan() {
+            const snapshot = await getDocs(collection(db, "users", currentUser.uid, "layanan"));
+            layananList = [];
+            snapshot.forEach(doc => {
+                layananList.push({ id: doc.id, ...doc.data() });
+            });
+        }
+        
+        async function loadTukang() {
+            const snapshot = await getDocs(collection(db, "users", currentUser.uid, "tukang"));
+            tukangList = [];
+            snapshot.forEach(doc => {
+                tukangList.push({ id: doc.id, ...doc.data() });
+            });
+        }
+        
+        async function loadTransaksi() {
+            const q = query(collection(db, "users", currentUser.uid, "transaksi"));
+            const snapshot = await getDocs(q);
+            transaksiList = [];
+            snapshot.forEach(doc => {
+                transaksiList.push({ id: doc.id, ...doc.data() });
+            });
+        }
+        
+        // ============ DASHBOARD & STATISTIK ============
+        function getStatsByDate(date) {
+            const transaksiHari = transaksiList.filter(t => t.tanggal === date);
+            let totalMotor = 0, totalMobil = 0, pendapatanKotor = 0, totalJasaTukang = 0;
+            
+            transaksiHari.forEach(t => {
+                pendapatanKotor += t.harga;
+                totalJasaTukang += t.jasaTukang;
+                if (t.namaLayanan.toLowerCase().includes("motor")) totalMotor++;
+                if (t.namaLayanan.toLowerCase().includes("mobil")) totalMobil++;
+            });
+            
+            const labaBersih = pendapatanKotor - totalJasaTukang;
+            return { totalMotor, totalMobil, pendapatanKotor, totalJasaTukang, labaBersih, totalTransaksi: transaksiHari.length, transaksiHari };
+        }
+        
+        function getGajiTukang() {
+            let gajiMap = {};
+            transaksiList.forEach(t => {
+                if (!gajiMap[t.namaTukang]) gajiMap[t.namaTukang] = 0;
+                gajiMap[t.namaTukang] += t.jasaTukang;
+            });
+            return gajiMap;
+        }
+        
+        function getWeeklyData() {
+            let weeklyData = {};
+            for (let i = 6; i >= 0; i--) {
+                let date = new Date();
+                date.setDate(date.getDate() - i);
+                let dateStr = date.toISOString().split('T')[0];
+                let stats = getStatsByDate(dateStr);
+                weeklyData[dateStr] = stats.labaBersih;
+            }
+            return weeklyData;
+        }
+        
+        // ============ EXPORT PDF ============
+        window.exportToPDF = function() {
+            const stats = getStatsByDate(selectedDate);
+            const gajiMap = getGajiTukang();
+            
+            // Buat konten HTML untuk PDF
+            let gajiHtml = "";
+            for (let [nama, jumlah] of Object.entries(gajiMap)) {
+                gajiHtml += `<tr><td style="padding: 8px; border-bottom: 1px solid #ddd;">${nama}</td><td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">Rp${jumlah.toLocaleString()}</td></tr>`;
+            }
+            if (gajiHtml === "") gajiHtml = "<tr><td colspan='2' style='padding: 8px; text-align: center;'>Belum ada transaksi</td></tr>";
+            
+            let transaksiHtml = "";
+            stats.transaksiHari.forEach(t => {
+                transaksiHtml += `<tr><td style="padding: 8px; border-bottom: 1px solid #ddd;">${t.namaLayanan}</td><td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">Rp${t.harga.toLocaleString()}</td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${t.namaTukang}</td></tr>`;
+            });
+            if (transaksiHtml === "") transaksiHtml = "<tr><td colspan='3' style='padding: 8px; text-align: center;'>Belum ada transaksi</td></tr>";
+            
+            const pdfContent = `
+                <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h1 style="color: #2563eb; margin-bottom: 5px;">🧼 CuciBersih</h1>
+                        <h2 style="color: #4b5563; font-size: 18px;">Laporan Harian</h2>
+                        <p style="color: #6b7280;">Tanggal: ${selectedDate}</p>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px;">
+                        <div style="background: #eff6ff; padding: 15px; border-radius: 12px; text-align: center;">
+                            <p style="color: #2563eb; font-size: 14px; margin-bottom: 5px;">🏍️ Total Motor</p>
+                            <p style="font-size: 28px; font-weight: bold; color: #1e40af;">${stats.totalMotor}</p>
+                        </div>
+                        <div style="background: #f0fdf4; padding: 15px; border-radius: 12px; text-align: center;">
+                            <p style="color: #16a34a; font-size: 14px; margin-bottom: 5px;">🚗 Total Mobil</p>
+                            <p style="font-size: 28px; font-weight: bold; color: #166534;">${stats.totalMobil}</p>
+                        </div>
+                        <div style="background: #fefce8; padding: 15px; border-radius: 12px; text-align: center;">
+                            <p style="color: #ca8a04; font-size: 14px; margin-bottom: 5px;">💰 Pendapatan Kotor</p>
+                            <p style="font-size: 20px; font-weight: bold; color: #854d0e;">Rp${stats.pendapatanKotor.toLocaleString()}</p>
+                        </div>
+                        <div style="background: #f3e8ff; padding: 15px; border-radius: 12px; text-align: center;">
+                            <p style="color: #9333ea; font-size: 14px; margin-bottom: 5px;">📈 Laba Bersih</p>
+                            <p style="font-size: 20px; font-weight: bold; color: #6b21a5;">Rp${stats.labaBersih.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 25px;">
+                        <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #374151;">💰 Rincian Gaji Tukang</h3>
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <thead>
+                                <tr style="background: #f3f4f6;">
+                                    <th style="padding: 10px; text-align: left;">Nama Tukang</th>
+                                    <th style="padding: 10px; text-align: right;">Total Gaji</th>
+                                </tr>
+                            </thead>
+                            <tbody>${gajiHtml}</tbody>
+                        </table>
+                        <div style="text-align: right; margin-top: 10px; padding: 10px; background: #f9fafb; border-radius: 8px;">
+                            <strong>Total Gaji: Rp${Object.values(gajiMap).reduce((a,b)=>a+b,0).toLocaleString()}</strong>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #374151;">📋 Daftar Transaksi</h3>
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <thead>
+                                <tr style="background: #f3f4f6;">
+                                    <th style="padding: 10px; text-align: left;">Layanan</th>
+                                    <th style="padding: 10px; text-align: right;">Harga</th>
+                                    <th style="padding: 10px; text-align: left;">Tukang</th>
+                                </tr>
+                            </thead>
+                            <tbody>${transaksiHtml}</tbody>
+                        </table>
+                    </div>
+                    
+                    <div style="margin-top: 30px; text-align: center; color: #9ca3af; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 15px;">
+                        Laporan dibuat dari aplikasi CuciBersih | ${new Date().toLocaleString()}
+                    </div>
+                </div>
+            `;
+            
+            // Konfigurasi PDF
+            const opt = {
+                margin: [0.5, 0.5, 0.5, 0.5],
+                filename: `Laporan_Cucian_${selectedDate}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(pdfContent).save();
+        };
+        
+        function renderDashboard() {
+            const stats = getStatsByDate(selectedDate);
+            const gajiMap = getGajiTukang();
+            
+            document.getElementById("totalMotor").innerHTML = `<i class="fas fa-motorcycle text-blue-500 mr-2"></i> ${stats.totalMotor}`;
+            document.getElementById("totalMobil").innerHTML = `<i class="fas fa-car text-green-500 mr-2"></i> ${stats.totalMobil}`;
+            document.getElementById("pendapatanKotor").innerHTML = `<i class="fas fa-chart-line text-yellow-500 mr-2"></i> Rp${stats.pendapatanKotor.toLocaleString()}`;
+            document.getElementById("labaBersih").innerHTML = `<i class="fas fa-coins text-green-500 mr-2"></i> Rp${stats.labaBersih.toLocaleString()}`;
+            
+            let gajiHtml = "";
+            for (let [nama, jumlah] of Object.entries(gajiMap)) {
+                gajiHtml += `<div class="flex justify-between py-2 border-b"><span class="font-semibold">${nama}</span><span class="text-green-600">Rp${jumlah.toLocaleString()}</span></div>`;
+            }
+            if (gajiHtml === "") gajiHtml = "<p class='text-gray-500 text-sm'>Belum ada transaksi</p>";
+            document.getElementById("gajiTukangList").innerHTML = gajiHtml;
+            document.getElementById("totalGajiTukang").innerHTML = `Rp${Object.values(gajiMap).reduce((a,b)=>a+b,0).toLocaleString()}`;
+            
+            const weeklyData = getWeeklyData();
+            const labels = Object.keys(weeklyData);
+            const data = Object.values(weeklyData);
+            
+            if (chartInstance) chartInstance.destroy();
+            const ctx = document.getElementById("profitChart").getContext("2d");
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.map(d => d.slice(5)),
+                    datasets: [{
+                        label: 'Laba Bersih (Rp)',
+                        data: data,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+            
+            let transaksiHtml = "";
+            const transaksiHari = stats.transaksiHari;
+            if (transaksiHari.length === 0) {
+                transaksiHtml = "<p class='text-gray-500 text-sm'>Belum ada transaksi hari ini</p>";
+            } else {
+                transaksiHari.forEach(t => {
+                    transaksiHtml += `<div class="flex justify-between py-2 border-b"><span>🧼 ${t.namaLayanan} (${t.namaTukang})</span><span class="font-semibold">Rp${t.harga.toLocaleString()}</span></div>`;
+                });
+            }
+            document.getElementById("transaksiHariIni").innerHTML = transaksiHtml;
+            document.getElementById("selectedDate").innerHTML = `<i class="fas fa-calendar-day mr-2"></i> ${selectedDate}`;
+        }
+        
+        function renderLayananList() {
+            const container = document.getElementById("layananList");
+            if (!container) return;
+            if (layananList.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">Belum ada layanan. Tambahkan layanan dulu.</p>';
+                return;
+            }
+            container.innerHTML = layananList.map(l => `
+                <div class="bg-white rounded-xl p-4 mb-3 shadow-sm flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-lg">${l.nama}</p>
+                        <p class="text-sm text-gray-500">Harga: <span class="text-green-600 font-semibold">Rp${l.harga.toLocaleString()}</span> | Jasa tukang: Rp${l.jasaTukang.toLocaleString()}</p>
+                    </div>
+                    <button onclick="hapusLayanan('${l.id}')" class="bg-red-100 text-red-500 p-2 rounded-full w-10 h-10"><i class="fas fa-trash"></i></button>
+                </div>
+            `).join('');
+        }
+        
+        function renderTransaksiButtons() {
+            const container = document.getElementById("transaksiButtons");
+            if (!container) return;
+            if (layananList.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm col-span-2 text-center py-4">Tambahkan layanan dulu untuk mulai transaksi</p>';
+                return;
+            }
+            if (tukangList.length === 0) {
+                container.innerHTML = '<p class="text-yellow-600 text-sm col-span-2 text-center py-4">⚠️ Tambahkan tukang cuci dulu</p>';
+                return;
+            }
+            container.innerHTML = layananList.map(l => `
+                <button onclick="pilihLayanan('${l.id}', '${l.nama}', ${l.harga}, ${l.jasaTukang})" 
+                    class="bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 rounded-xl text-lg font-bold shadow-md active:scale-95 transition transform">
+                    <i class="fas fa-soap mr-2"></i>${l.nama}<br>
+                    <span class="text-sm opacity-90">Rp${l.harga.toLocaleString()}</span>
+                </button>
+            `).join('');
+        }
+        
+        window.pilihLayanan = function(layananId, nama, harga, jasaTukang) {
+            let tukangOptions = tukangList.map((t, i) => `${i+1}. ${t.nama}`).join('\n');
+            let tukangOption = prompt(`Pilih tukang untuk ${nama}:\n${tukangOptions}\n\nMasukkan nomor:`);
+            let index = parseInt(tukangOption) - 1;
+            if (index >= 0 && index < tukangList.length) {
+                catatTransaksi(layananId, nama, harga, jasaTukang, tukangList[index].id, tukangList[index].nama);
+            } else {
+                alert("Pilihan tidak valid");
+            }
+        };
+        
+        async function catatTransaksi(layananId, namaLayanan, harga, jasaTukang, tukangId, namaTukang) {
+            if (!currentUser) return;
+            try {
+                await addDoc(collection(db, "users", currentUser.uid, "transaksi"), {
+                    layananId: layananId,
+                    namaLayanan: namaLayanan,
+                    harga: harga,
+                    jasaTukang: jasaTukang,
+                    tukangId: tukangId,
+                    namaTukang: namaTukang,
+                    tanggal: new Date().toISOString().split('T')[0],
+                    timestamp: Timestamp.now()
+                });
+                alert("✅ Transaksi berhasil dicatat!");
+                await loadAllData();
+                renderDashboard();
+            } catch (error) {
+                alert("Gagal mencatat transaksi: " + error.message);
+            }
+        }
+        
+        window.hapusLayanan = async function(id) {
+            if (confirm("Hapus layanan ini?")) {
+                await deleteDoc(doc(db, "users", currentUser.uid, "layanan", id));
+                loadAllData();
+            }
+        };
+        
+        async function tambahLayanan(nama, harga, jasaTukang) {
+            if (!currentUser) return;
+            await addDoc(collection(db, "users", currentUser.uid, "layanan"), {
+                nama: nama,
+                harga: parseInt(harga),
+                jasaTukang: parseInt(jasaTukang),
+                createdAt: Timestamp.now()
+            });
+            loadAllData();
+        }
+        
+        async function tambahTukang(nama) {
+            if (!currentUser) return;
+            await addDoc(collection(db, "users", currentUser.uid, "tukang"), {
+                nama: nama,
+                aktif: true,
+                tanggalGabung: new Date().toISOString().split('T')[0]
+            });
+            loadAllData();
+        }
+        
+        window.hapusTukang = async function(id) {
+            if (confirm("Hapus tukang ini?")) {
+                await deleteDoc(doc(db, "users", currentUser.uid, "tukang", id));
+                loadAllData();
+            }
+        };
+        
+        function renderTukangList() {
+            const container = document.getElementById("tukangList");
+            if (!container) return;
+            if (tukangList.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">Belum ada tukang. Tambahkan tukang dulu.</p>';
+                return;
+            }
+            container.innerHTML = tukangList.map(t => `
+                <div class="bg-white rounded-xl p-4 mb-3 shadow-sm flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-lg">${t.nama}</p>
+                        <p class="text-sm text-gray-500">Bergabung: ${t.tanggalGabung}</p>
+                    </div>
+                    <button onclick="hapusTukang('${t.id}')" class="bg-red-100 text-red-500 p-2 rounded-full w-10 h-10"><i class="fas fa-trash"></i></button>
+                </div>
+            `).join('');
+        }
+        
+        function changeDate(days) {
+            let date = new Date(selectedDate);
+            date.setDate(date.getDate() + days);
+            selectedDate = date.toISOString().split('T')[0];
+            renderDashboard();
+        }
+        
+        function initEventListeners() {
+            document.getElementById("loginBtn").onclick = () => {
+                const email = document.getElementById("loginEmail").value;
+                const password = document.getElementById("loginPassword").value;
+                handleLogin(email, password);
+            };
+            document.getElementById("registerBtn").onclick = () => {
+                const email = document.getElementById("registerEmail").value;
+                const password = document.getElementById("registerPassword").value;
+                handleRegister(email, password);
+            };
+            document.getElementById("logoutBtn").onclick = handleLogout;
+            document.getElementById("tambahLayananBtn").onclick = () => {
+                let nama = prompt("Nama layanan (contoh: Cuci Motor):");
+                let harga = prompt("Harga untuk konsumen (contoh: 15000):");
+                let jasa = prompt("Jasa untuk tukang (contoh: 5000):");
+                if (nama && harga && jasa) tambahLayanan(nama, harga, jasa);
+            };
+            document.getElementById("tambahTukangBtn").onclick = () => {
+                let nama = prompt("Nama tukang:");
+                if (nama) tambahTukang(nama);
+            };
+            document.getElementById("prevDay").onclick = () => changeDate(-1);
+            document.getElementById("nextDay").onclick = () => changeDate(1);
+            document.getElementById("todayBtn").onclick = () => {
+                selectedDate = new Date().toISOString().split('T')[0];
+                renderDashboard();
+            };
+        }
+        
+        function initTabs() {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabName = btn.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                    document.getElementById(`tab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).style.display = 'block';
+                    document.querySelectorAll('.tab-btn').forEach(b => {
+                        b.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600', 'bg-blue-50');
+                        b.classList.add('text-gray-500');
+                    });
+                    btn.classList.remove('text-gray-500');
+                    btn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600', 'bg-blue-50');
+                    if (tabName === 'dashboard') renderDashboard();
+                });
+            });
+        }
+        
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                showAppScreen();
+            } else {
+                showAuthScreen();
+            }
+        });
+        
+        document.addEventListener("DOMContentLoaded", () => {
+            initEventListeners();
+            initTabs();
+        });
+    </script>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 font-sans">
+    
+    <!-- LAYAR LOGIN/REGISTER -->
+    <div id="authScreen" class="min-h-screen flex items-center justify-center p-4" style="display: flex;">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
+            <div class="text-center mb-8">
+                <div class="text-6xl mb-3">🧼</div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">CuciBersih</h1>
+                <p class="text-gray-500 mt-1">Manajemen Cucian Modern</p>
+            </div>
+            
+            <div class="mb-6">
+                <h2 class="text-lg font-semibold mb-3 flex items-center"><i class="fas fa-sign-in-alt mr-2 text-blue-500"></i> Login</h2>
+                <input type="email" id="loginEmail" placeholder="Email" class="w-full border border-gray-300 rounded-xl p-3 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <input type="password" id="loginPassword" placeholder="Password" class="w-full border border-gray-300 rounded-xl p-3 mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <button id="loginBtn" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white w-full py-3 rounded-xl font-semibold shadow-md">Login</button>
+            </div>
+            
+            <div class="relative my-6">
+                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-300"></div></div>
+                <div class="relative flex justify-center"><span class="bg-white px-4 text-gray-400 text-sm">atau</span></div>
+            </div>
+            
+            <div>
+                <h2 class="text-lg font-semibold mb-3 flex items-center"><i class="fas fa-user-plus mr-2 text-green-500"></i> Daftar Baru</h2>
+                <input type="email" id="registerEmail" placeholder="Email" class="w-full border border-gray-300 rounded-xl p-3 mb-2 focus:outline-none focus:ring-2 focus:ring-green-400">
+                <input type="password" id="registerPassword" placeholder="Password" class="w-full border border-gray-300 rounded-xl p-3 mb-3 focus:outline-none focus:ring-2 focus:ring-green-400">
+                <button id="registerBtn" class="bg-gradient-to-r from-green-500 to-green-600 text-white w-full py-3 rounded-xl font-semibold shadow-md">Daftar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- LAYAR APLIKASI UTAMA -->
+    <div id="appScreen" class="max-w-md mx-auto pb-24" style="display: none;">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-5 shadow-lg sticky top-0 z-10 rounded-b-3xl">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold">🧼 CuciBersih</h1>
+                    <p class="text-sm opacity-90 mt-1">Halo, <span id="userName" class="font-semibold"></span></p>
+                </div>
+                <button id="logoutBtn" class="bg-white/20 backdrop-blur px-4 py-2 rounded-xl text-sm font-semibold"><i class="fas fa-sign-out-alt mr-1"></i> Logout</button>
+            </div>
+        </div>
+        
+        <!-- Tombol Transaksi Cepat -->
+        <div class="p-4">
+            <h2 class="font-bold text-gray-700 mb-3 flex items-center"><i class="fas fa-bolt text-yellow-500 mr-2"></i> Transaksi Cepat</h2>
+            <div id="transaksiButtons" class="grid grid-cols-2 gap-3">
+                <p class="text-gray-500 text-sm col-span-2 text-center py-4">Memuat...</p>
+            </div>
+        </div>
+        
+        <!-- TABS -->
+        <div class="px-4 mb-3">
+            <div class="bg-white rounded-2xl shadow-sm flex p-1">
+                <button class="tab-btn flex-1 py-2 rounded-xl text-center font-semibold text-blue-600 bg-blue-50" data-tab="dashboard"><i class="fas fa-chart-line mr-1"></i> Dashboard</button>
+                <button class="tab-btn flex-1 py-2 rounded-xl text-center font-semibold text-gray-500" data-tab="layanan"><i class="fas fa-tags mr-1"></i> Layanan</button>
+                <button class="tab-btn flex-1 py-2 rounded-xl text-center font-semibold text-gray-500" data-tab="tukang"><i class="fas fa-users mr-1"></i> Tukang</button>
+            </div>
+        </div>
+        
+        <!-- KONTEN DASHBOARD -->
+        <div id="tabDashboard" class="tab-content p-4">
+            <!-- Pilih Tanggal -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm mb-4">
+                <div class="flex justify-between items-center">
+                    <button id="prevDay" class="bg-gray-100 p-2 rounded-full w-10 h-10"><i class="fas fa-chevron-left text-gray-600"></i></button>
+                    <span id="selectedDate" class="font-semibold text-gray-700"></span>
+                    <button id="nextDay" class="bg-gray-100 p-2 rounded-full w-10 h-10"><i class="fas fa-chevron-right text-gray-600"></i></button>
+                </div>
+                <div class="flex justify-between items-center mt-3">
+                    <button id="todayBtn" class="text-sm text-blue-600 font-semibold">Hari Ini</button>
+                    <button onclick="exportToPDF()" class="bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-md"><i class="fas fa-download mr-1"></i> Download PDF</button>
+                </div>
+            </div>
+            
+            <!-- Kartu Statistik -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-4 shadow-sm">
+                    <p class="text-gray-500 text-sm">Total Motor</p>
+                    <p class="text-2xl font-bold text-blue-700" id="totalMotor">0</p>
+                </div>
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-4 shadow-sm">
+                    <p class="text-gray-500 text-sm">Total Mobil</p>
+                    <p class="text-2xl font-bold text-green-700" id="totalMobil">0</p>
+                </div>
+                <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl p-4 shadow-sm">
+                    <p class="text-gray-500 text-sm">Pendapatan Kotor</p>
+                    <p class="text-xl font-bold text-yellow-700" id="pendapatanKotor">Rp0</p>
+                </div>
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-4 shadow-sm">
+                    <p class="text-gray-500 text-sm">Laba Bersih</p>
+                    <p class="text-xl font-bold text-purple-700" id="labaBersih">Rp0</p>
+                </div>
+            </div>
+            
+            <!-- Grafik -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm mb-4">
+                <h3 class="font-bold text-gray-700 mb-3"><i class="fas fa-chart-line mr-2 text-blue-500"></i> Grafik Laba 7 Hari</h3>
+                <div style="height: 200px;">
+                    <canvas id="profitChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Gaji Tukang -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm mb-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-gray-700"><i class="fas fa-money-bill-wave mr-2 text-green-500"></i> Gaji Tukang</h3>
+                    <span class="font-bold text-green-600" id="totalGajiTukang">Rp0</span>
+                </div>
+                <div id="gajiTukangList" class="max-h-40 overflow-y-auto"></div>
+            </div>
+            
+            <!-- Transaksi Hari Ini -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm">
+                <h3 class="font-bold text-gray-700 mb-3"><i class="fas fa-receipt mr-2 text-gray-500"></i> Transaksi Hari Ini</h3>
+                <div id="transaksiHariIni"></div>
+            </div>
+        </div>
+        
+        <!-- KONTEN LAYANAN -->
+        <div id="tabLayanan" class="tab-content p-4" style="display: none;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-gray-700 text-lg"><i class="fas fa-tags mr-2 text-blue-500"></i> Daftar Layanan</h2>
+                <button id="tambahLayananBtn" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-xl shadow-md"><i class="fas fa-plus mr-1"></i> Tambah</button>
+            </div>
+            <div id="layananList"></div>
+        </div>
+        
+        <!-- KONTEN TUKANG -->
+        <div id="tabTukang" class="tab-content p-4" style="display: none;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-gray-700 text-lg"><i class="fas fa-users mr-2 text-blue-500"></i> Daftar Tukang</h2>
+                <button id="tambahTukangBtn" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-xl shadow-md"><i class="fas fa-plus mr-1"></i> Tambah</button>
+            </div>
+            <div id="tukangList"></div>
+        </div>
+    </div>
+</body>
+  </html>

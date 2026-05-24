@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CarWash99 - Manajemen Cuci Mobil Premium</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: { 900: '#040a1a', 800: '#0a1128', 700: '#0d1b3e', 600: '#132456', 500: '#1a2f6b' },
+                        royal: { 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+                        gold: { 300: '#f5d98c', 400: '#f0c040', 500: '#d4af37', 600: '#c9a227', 700: '#a88620' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --bg-deep: #040a1a;
+            --bg-card: rgba(13, 27, 62, 0.6);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-gold: rgba(212, 175, 55, 0.3);
+            --gold: #d4af37;
+            --gold-light: #f0c040;
+            --text-primary: #f0f4ff;
+            --text-secondary: #8ba3cc;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        .font-display { font-family: 'Playfair Display', serif; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.3); border-radius: 10px; }
+        
+        #particleCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            transition: all 0.4s ease;
+        }
+        .glass-card:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+            box-shadow: 0 8px 40px rgba(59, 130, 246, 0.08);
+        }
+        .btn-gold {
+            background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #f0c040 100%);
+            color: #040a1a;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+        .btn-gold:hover { box-shadow: 0 6px 30px rgba(212, 175, 55, 0.4); transform: translateY(-1px); }
+        
+        .lux-input {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 14px 18px;
+            color: var(--text-primary);
+            width: 100%;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        .lux-input:focus {
+            border-color: rgba(212, 175, 55, 0.4);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.08);
+        }
+        
+        .stat-card {
+            background: linear-gradient(145deg, rgba(37,99,235,0.12), rgba(29,78,216,0.06));
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid var(--border-glass);
+            transition: all 0.4s ease;
+        }
+        .stat-card:hover { transform: translateY(-2px); border-color: rgba(212,175,55,0.2); }
+        
+        .tab-luxury {
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-secondary);
+            border-radius: 14px;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+        }
+        .tab-luxury.active {
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.08);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+        }
+        
+        .glow-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+            animation: orbFloat 15s ease-in-out infinite;
+        }
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -40px) scale(1.1); }
+            50% { transform: translate(-20px, 20px) scale(0.95); }
+            75% { transform: translate(40px, 30px) scale(1.05); }
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(4, 10, 26, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.show { opacity: 1; pointer-events: all; }
+        .modal-box {
+            background: linear-gradient(145deg, #0d1b3e 0%, #0a1128 100%);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 420px;
+            width: 100%;
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .modal-overlay.show .modal-box { transform: scale(1) translateY(0); }
+        
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: linear-gradient(135deg, #0d1b3e, #132456);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 16px;
+            padding: 16px 24px;
+            transform: translateX(120%);
+            transition: transform 0.4s ease;
+        }
+        .toast.show { transform: translateX(0); }
+        
+        .transaksi-btn {
+            background: linear-gradient(145deg, rgba(37,99,235,0.15), rgba(29,78,216,0.25));
+            border: 1px solid rgba(59,130,246,0.2);
+            border-radius: 18px;
+            padding: 18px 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .transaksi-btn:hover {
+            border-color: rgba(212,175,55,0.3);
+            transform: translateY(-3px);
+        }
+        
+        .btn-delete {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            background: rgba(239,68,68,0.08);
+            color: #f87171;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-delete:hover { background: rgba(239,68,68,0.15); }
+        
+        .shimmer-text {
+            background: linear-gradient(90deg, var(--gold) 0%, #f5d98c 25%, var(--gold) 50%, #f5d98c 75%, var(--gold) 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer-text 4s linear infinite;
+        }
+        @keyframes shimmer-text {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="particleCanvas"></canvas>
+    <div class="glow-orb" style="width:400px;height:400px;background:#2563eb;top:-100px;left:-100px;"></div>
+    <div class="glow-orb" style="width:350px;height:350px;background:#d4af37;bottom:-80px;right:-80px;"></div>
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="customModal">
+        <div class="modal-box">
+            <div id="modalIcon" class="text-center text-4xl mb-4"></div>
+            <h3 id="modalTitle" class="font-display text-xl font-bold text-center mb-2"></h3>
+            <p id="modalDesc" class="text-center text-sm mb-6" style="color:var(--text-secondary)"></p>
+            <div id="modalInputs" class="space-y-3 mb-6"></div>
+            <div id="modalOptions" class="space-y-2 mb-6" style="display:none;"></div>
+            <div class="flex gap-3">
+                <button id="modalCancel" class="flex-1 py-3 rounded-xl font-semibold text-sm" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text-secondary);cursor:pointer;">Batal</button>
+                <button id="modalConfirm" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer">Konfirmasi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUTH SCREEN -->
+    <div id="authScreen" class="min-h-screen flex items-center justify-center p-4 relative z-10" style="display:flex;">
+        <div class="glass-card p-8 max-w-md w-full" style="border:1px solid rgba(212,175,55,0.3);">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4" style="background:linear-gradient(135deg,rgba(37,99,235,0.2),rgba(212,175,55,0.15));border:1px solid rgba(212,175,55,0.2);">
+                    <i class="fas fa-car-side text-3xl" style="color:var(--gold);"></i>
+                </div>
+                <h1 class="font-display text-4xl font-black shimmer-text mb-1">CarWash99</h1>
+                <p class="text-sm tracking-widest uppercase" style="color:var(--text-secondary);">Premium Car Wash Management</p>
+            </div>
+            <div class="mb-6">
+                <h2 class="text-sm font-semibold mb-4 flex items-center gap-2" style="color:var(--gold);"><span class="w-6 h-px" style="background:var(--gold);"></span>Masuk ke Akun<span class="flex-1 h-px" style="background:rgba(212,175,55,0.2);"></span></h2>
+                <input type="email" id="loginEmail" placeholder="Email anda" class="lux-input mb-3">
+                <input type="password" id="loginPassword" placeholder="Password" class="lux-input mb-4">
+                <button id="loginBtn" class="btn-gold w-full py-3.5 rounded-xl font-semibold text-sm"><i class="fas fa-arrow-right-to-bracket mr-2"></i>MASUK</button>
+            </div>
+            <div class="h-px bg-gradient-to-r from-transparent via-yellow-600/30 to-transparent my-6"></div>
+            <div>
+                <h2 class="text-sm font-semibold mb-4 flex items-center gap-2" style="color:var(--gold);"><span class="w-6 h-px" style="background:var(--gold);"></span>Buat Akun Baru<span class="flex-1 h-px" style="background:rgba(212,175,55,0.2);"></span></h2>
+                <input type="email" id="registerEmail" placeholder="Email baru" class="lux-input mb-3">
+                <input type="password" id="registerPassword" placeholder="Buat password" class="lux-input mb-4">
+                <button id="registerBtn" class="btn-gold w-full py-3.5 rounded-xl text-sm"><i class="fas fa-crown mr-2"></i>DAFTAR SEKARANG</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APP SCREEN -->
+    <div id="appScreen" class="max-w-md mx-auto pb-28 relative z-10" style="display:none;">
+        <header class="sticky top-0 z-50 px-4 pt-4 pb-0">
+            <div class="glass-card p-5" style="border-radius:0 0 24px 24px;border-top:none;">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-full flex items-center justify-center" style="background:linear-gradient(135deg,rgba(212,175,55,0.2),rgba(37,99,235,0.2));">
+                            <i class="fas fa-car-side" style="color:var(--gold);"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-display text-lg font-bold shimmer-text">CarWash99</h1>
+                            <p class="text-xs" style="color:var(--text-secondary);">Halo, <span id="userName" class="font-semibold" style="color:var(--gold-light);"></span></p>
+                        </div>
+                    </div>
+                    <button id="logoutBtn" class="px-4 py-2.5 rounded-xl text-xs font-semibold" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text-secondary);cursor:pointer;"><i class="fas fa-arrow-right-from-bracket mr-1"></i>Keluar</button>
+                </div>
+            </div>
+        </header>
+
+        <section class="px-4 mt-5">
+            <div class="flex items-center gap-2 mb-3"><i class="fas fa-bolt" style="color:var(--gold);"></i><h2 class="font-display text-base font-bold">Transaksi Cepat</h2><span class="flex-1 h-px" style="background:rgba(212,175,55,0.15);"></span></div>
+            <div id="transaksiButtons" class="grid grid-cols-2 gap-3"><div class="glass-card p-6 col-span-2 text-center text-sm" style="color:var(--text-secondary);">Memuat...</div></div>
+        </section>
+
+        <nav class="px-4 mt-5">
+            <div class="glass-card p-1.5 flex gap-1" style="border-radius:16px;">
+                <button class="tab-luxury active flex-1" data-tab="dashboard"><i class="fas fa-chart-line mr-1.5"></i>Dashboard</button>
+                <button class="tab-luxury flex-1" data-tab="layanan"><i class="fas fa-tags mr-1.5"></i>Layanan</button>
+                <button class="tab-luxury flex-1" data-tab="tukang"><i class="fas fa-users mr-1.5"></i>Tukang</button>
+                <button class="tab-luxury flex-1" data-tab="laporanTukang"><i class="fas fa-money-bill mr-1.5"></i>Gaji</button>
+            </div>
+        </nav>
+
+        <!-- DASHBOARD TAB -->
+        <div id="tabDashboard" class="tab-content px-4 mt-4 space-y-4">
+            <div class="glass-card p-4">
+                <div class="flex justify-between items-center">
+                    <button id="prevDay" class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.05);"><i class="fas fa-chevron-left text-sm"></i></button>
+                    <span id="selectedDate" class="font-semibold text-sm" style="color:var(--gold-light);"></span>
+                    <button id="nextDay" class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.05);"><i class="fas fa-chevron-right text-sm"></i></button>
+                </div>
+                <div class="flex justify-between items-center mt-3">
+                    <button id="todayBtn" class="text-xs font-semibold" style="color:var(--gold);">Hari Ini</button>
+                    <button onclick="exportToPDF()" class="px-4 py-2 rounded-xl text-xs font-semibold" style="background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.25);color:var(--gold);"><i class="fas fa-file-pdf mr-1.5"></i>Unduh PDF</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="stat-card"><p class="text-xs font-medium mb-2" style="color:var(--text-secondary);"><i class="fas fa-motorcycle mr-1.5"></i>Total Motor</p><p class="text-3xl font-bold font-display" style="color:#93c5fd;" id="totalMotor">0</p></div>
+                <div class="stat-card"><p class="text-xs font-medium mb-2" style="color:var(--text-secondary);"><i class="fas fa-car mr-1.5"></i>Total Mobil</p><p class="text-3xl font-bold font-display" style="color:#6ee7b7;" id="totalMobil">0</p></div>
+                <div class="stat-card"><p class="text-xs font-medium mb-2" style="color:var(--text-secondary);"><i class="fas fa-coins mr-1.5"></i>Pendapatan Kotor</p><p class="text-lg font-bold font-display" style="color:var(--gold-light);" id="pendapatanKotor">Rp0</p></div>
+                <div class="stat-card"><p class="text-xs font-medium mb-2" style="color:var(--text-secondary);"><i class="fas fa-chart-pie mr-1.5"></i>Laba Bersih</p><p class="text-lg font-bold font-display" style="color:#c4b5fd;" id="labaBersih">Rp0</p></div>
+            </div>
+
+            <div class="glass-card p-5"><div class="flex items-center gap-2 mb-4"><i class="fas fa-chart-area text-sm" style="color:var(--gold);"></i><h3 class="font-display text-sm font-bold">Grafik Laba 7 Hari</h3></div><div style="height:200px;"><canvas id="profitChart"></canvas></div></div>
+
+            <div class="glass-card p-5"><div class="flex justify-between items-center mb-4"><div><i class="fas fa-money-bill-wave text-sm mr-2" style="color:var(--gold);"></i><h3 class="font-display text-sm font-bold inline">Gaji Tukang Cuci</h3></div><span class="font-bold text-sm shimmer-text" id="totalGajiTukang">Rp0</span></div><div id="gajiTukangList" class="max-h-40 overflow-y-auto"></div></div>
+
+            <div class="glass-card p-5"><div class="flex items-center gap-2 mb-4"><i class="fas fa-receipt text-sm" style="color:var(--gold);"></i><h3 class="font-display text-sm font-bold">Transaksi Hari Ini</h3></div><div id="transaksiHariIni"></div></div>
+        </div>
+
+        <!-- LAYANAN TAB -->
+        <div id="tabLayanan" class="tab-content px-4 mt-4" style="display:none;">
+            <div class="flex justify-between items-center mb-4"><h2 class="font-display text-base font-bold"><i class="fas fa-tags mr-2" style="color:var(--gold);"></i>Daftar Layanan</h2><button id="tambahLayananBtn" class="btn-gold px-5 py-2.5 rounded-xl text-xs"><i class="fas fa-plus mr-1.5"></i>Tambah</button></div>
+            <div id="layananList" class="space-y-3"></div>
+        </div>
+
+        <!-- TUKANG TAB -->
+        <div id="tabTukang" class="tab-content px-4 mt-4" style="display:none;">
+            <div class="flex justify-between items-center mb-4"><h2 class="font-display text-base font-bold"><i class="fas fa-users mr-2" style="color:var(--gold);"></i>Daftar Tukang Cuci</h2><button id="tambahTukangBtn" class="btn-gold px-5 py-2.5 rounded-xl text-xs"><i class="fas fa-plus mr-1.5"></i>Tambah</button></div>
+            <div id="tukangList" class="space-y-3"></div>
+        </div>
+
+        <!-- LAPORAN GAJI TUKANG TAB -->
+        <div id="tabLaporanTukang" class="tab-content px-4 mt-4" style="display:none;">
+            <div class="flex justify-between items-center mb-4"><h2 class="font-display text-base font-bold"><i class="fas fa-money-bill-wave mr-2" style="color:var(--gold);"></i>Rekap Gaji Tukang</h2></div>
+            <div id="laporanTukangDetail" class="space-y-3"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        const firebaseConfig = {
+            apiKey: "AIzaSyCFXSdwMp3WaUDGeYj2m4Q-l49TYs_LRR0",
+            authDomain: "carwash-99.firebaseapp.com",
+            projectId: "carwash-99",
+            storageBucket: "carwash-99.firebasestorage.app",
+            messagingSenderId: "617166626443",
+            appId: "1:617166626443:web:b030f30fd51c3b8eb2fe8e"
+        };
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentUser = null, layananList = [], tukangList = [], transaksiList = [], chartInstance = null;
+        let selectedDate = new Date().toISOString().split('T')[0];
+
+        // Particles
+        function initParticles() {
+            const canvas = document.getElementById('particleCanvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            resize();
+            window.addEventListener('resize', resize);
+            for (let i = 0; i < 50; i++) particles.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: Math.random() * 2 + 0.5, speedX: (Math.random() - 0.5) * 0.3, speedY: (Math.random() - 0.5) * 0.3, opacity: Math.random() * 0.5 + 0.1, color: Math.random() > 0.7 ? '212,175,55' : '96,165,250' });
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.x += p.speedX; p.y += p.speedY;
+                    if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${p.color},${p.opacity})`; ctx.fill();
+                });
+                for (let i = 0; i < particles.length; i++) for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y, dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 120) { ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y); ctx.strokeStyle = `rgba(96,165,250,${0.06 * (1 - dist / 120)})`; ctx.lineWidth = 0.5; ctx.stroke(); }
+                }
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        initParticles();
+
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+            toast.innerHTML = `${icons[type]} ${msg}`;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 3000);
+        }
+
+        function showModal({ icon, title, desc, inputs = [], options = [], confirmText = 'Konfirmasi' }) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('customModal');
+                document.getElementById('modalIcon').innerHTML = icon || '';
+                document.getElementById('modalTitle').textContent = title;
+                document.getElementById('modalDesc').textContent = desc || '';
+                const inputsEl = document.getElementById('modalInputs');
+                inputsEl.innerHTML = '';
+                inputs.forEach(inp => { inputsEl.innerHTML += `<input type="${inp.type || 'text'}" class="lux-input" placeholder="${inp.placeholder}" data-key="${inp.key}" value="${inp.value || ''}">`; });
+                const optionsEl = document.getElementById('modalOptions');
+                optionsEl.innerHTML = ''; optionsEl.style.display = options.length > 0 ? 'block' : 'none';
+                let selectedIndex = -1;
+                options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-full text-left p-3 rounded-xl text-sm cursor-pointer';
+                    btn.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--text-primary);';
+                    btn.innerHTML = `<span class="inline-block w-6 h-6 rounded-full text-center text-xs leading-6 mr-3" style="background:rgba(212,175,55,0.15);color:var(--gold);">${idx + 1}</span>${opt.label}`;
+                    btn.onclick = () => {
+                        document.querySelectorAll('#modalOptions button').forEach(b => { b.style.borderColor = 'rgba(255,255,255,0.08)'; b.style.background = 'rgba(255,255,255,0.04)'; });
+                        btn.style.borderColor = 'rgba(212,175,55,0.5)'; btn.style.background = 'rgba(212,175,55,0.12)'; selectedIndex = idx;
+                    };
+                    optionsEl.appendChild(btn);
+                });
+                document.getElementById('modalConfirm').textContent = confirmText;
+                document.getElementById('modalConfirm').onclick = () => {
+                    if (options.length > 0 && selectedIndex === -1) { showToast('Pilih tukang cuci terlebih dahulu', 'error'); return; }
+                    const values = {};
+                    inputsEl.querySelectorAll('input').forEach(inp => { values[inp.dataset.key] = inp.value; });
+                    modal.classList.remove('show');
+                    resolve({ values, selectedIndex, selectedOption: options[selectedIndex] || null });
+                };
+                document.getElementById('modalCancel').onclick = () => { modal.classList.remove('show'); resolve(null); };
+                modal.classList.add('show');
+                setTimeout(() => { const fi = inputsEl.querySelector('input'); if (fi) fi.focus(); }, 300);
+            });
+        }
+
+        function showAuthScreen() { document.getElementById("authScreen").style.display = "flex"; document.getElementById("appScreen").style.display = "none"; }
+        function showAppScreen() { document.getElementById("authScreen").style.display = "none"; document.getElementById("appScreen").style.display = "block"; document.getElementById("userName").textContent = currentUser.email; loadAllData(); }
+
+        async function handleLogin(email, password) { try { await signInWithEmailAndPassword(auth, email, password); showToast('Selamat datang!', 'success'); } catch (error) { showToast('Login gagal: ' + error.message, 'error'); } }
+        async function handleRegister(email, password) { try { await createUserWithEmailAndPassword(auth, email, password); showToast('Registrasi berhasil! Silakan login.', 'success'); } catch (error) { showToast('Registrasi gagal: ' + error.message, 'error'); } }
+        async function handleLogout() { await signOut(auth); }
+
+        async function loadAllData() { if (!currentUser) return; await loadLayanan(); await loadTukang(); await loadTransaksi(); renderDashboard(); renderLayananList(); renderTukangList(); renderTransaksiButtons(); renderLaporanTukang(); }
+        async function loadLayanan() { const snapshot = await getDocs(collection(db, "users", currentUser.uid, "layanan")); layananList = []; snapshot.forEach(d => layananList.push({ id: d.id, ...d.data() })); }
+        async function loadTukang() { const snapshot = await getDocs(collection(db, "users", currentUser.uid, "tukang")); tukangList = []; snapshot.forEach(d => tukangList.push({ id: d.id, ...d.data() })); }
+        async function loadTransaksi() { const snapshot = await getDocs(collection(db, "users", currentUser.uid, "transaksi")); transaksiList = []; snapshot.forEach(d => transaksiList.push({ id: d.id, ...d.data() })); }
+
+        function getStatsByDate(date) {
+            const th = transaksiList.filter(t => t.tanggal === date);
+            let tm = 0, tb = 0, pk = 0, jt = 0;
+            th.forEach(t => { pk += t.harga; jt += t.jasaTukang; if (t.namaLayanan.toLowerCase().includes("motor")) tm++; if (t.namaLayanan.toLowerCase().includes("mobil")) tb++; });
+            return { totalMotor: tm, totalMobil: tb, pendapatanKotor: pk, totalJasaTukang: jt, labaBersih: pk - jt, transaksiHari: th };
+        }
+        function getGajiTukang() { let m = {}; transaksiList.forEach(t => { if (!m[t.namaTukang]) m[t.namaTukang] = 0; m[t.namaTukang] += t.jasaTukang; }); return m; }
+        function getWeeklyData() { let wd = {}; for (let i = 6; i >= 0; i--) { let d = new Date(); d.setDate(d.getDate() - i); let ds = d.toISOString().split('T')[0]; wd[ds] = getStatsByDate(ds).labaBersih; } return wd; }
+
+        function renderLaporanTukang() {
+            const container = document.getElementById("laporanTukangDetail");
+            if (!container) return;
+            let gajiDetail = {};
+            transaksiList.forEach(t => {
+                if (!gajiDetail[t.namaTukang]) gajiDetail[t.namaTukang] = { total: 0, transaksi: [] };
+                gajiDetail[t.namaTukang].total += t.jasaTukang;
+                gajiDetail[t.namaTukang].transaksi.push({ tanggal: t.tanggal, layanan: t.namaLayanan, harga: t.harga, jasa: t.jasaTukang, plat: t.platNomor || '-' });
+            });
+            if (Object.keys(gajiDetail).length === 0) { container.innerHTML = '<div class="glass-card p-8 text-center"><p class="text-sm" style="color:var(--text-secondary);">Belum ada data transaksi</p></div>'; return; }
+            container.innerHTML = Object.entries(gajiDetail).map(([nama, data]) => `
+                <div class="glass-card p-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold" style="background:rgba(212,175,55,0.15);color:var(--gold);">${nama.charAt(0)}</div>
+                            <div><h3 class="font-bold">${nama}</h3><p class="text-xs" style="color:var(--text-secondary);">Total Gaji: <span style="color:#6ee7b7;font-weight:bold;">Rp${data.total.toLocaleString()}</span></p></div>
+                        </div>
+                    </div>
+                    <div class="space-y-2 mt-3">
+                        ${data.transaksi.map(t => `<div class="flex justify-between text-xs py-1" style="border-bottom:1px solid rgba(255,255,255,0.05);"><span>${t.tanggal.slice(5)} - ${t.layanan}</span><span style="color:var(--gold-light);">Rp${t.harga.toLocaleString()}</span><span class="text-gray-400">Plat: ${t.plat}</span></div>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.exportToPDF = function() {
+            const stats = getStatsByDate(selectedDate);
+            const gajiMap = getGajiTukang();
+            let trHtml = stats.transaksiHari.map(t => `<tr><td style="padding:8px;">${t.namaLayanan}</td><td style="padding:8px;">${t.platNomor || '-'}</td><td style="padding:8px;">${t.namaTukang}</td><td style="padding:8px;text-align:right;">Rp${t.harga.toLocaleString()}</td></tr>`).join('');
+            if (!trHtml) trHtml = '<tr><td colspan="4" style="padding:12px;text-align:center;">Belum ada transaksi</td></tr>';
+            const pdfContent = `<div style="font-family:Arial;padding:20px;"><h1 style="color:#d4af37;">CarWash99</h1><h2>Laporan Harian - ${selectedDate}</h2><table style="width:100%;border-collapse:collapse;"><tr><th>Layanan</th><th>Plat Nomor</th><th>Tukang</th><th>Harga</th></tr>${trHtml}</table><div style="margin-top:20px;"><strong>Total Pendapatan: Rp${stats.pendapatanKotor.toLocaleString()}</strong><br><strong>Total Gaji Tukang: Rp${stats.totalJasaTukang.toLocaleString()}</strong><br><strong>Laba Bersih: Rp${stats.labaBersih.toLocaleString()}</strong></div></div>`;
+            html2pdf().set({ margin: 0.5, filename: `Laporan_CarWash99_${selectedDate}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4' } }).from(pdfContent).save();
+            showToast('PDF berhasil diunduh', 'success');
+        };
+
+        function renderDashboard() {
+            const stats = getStatsByDate(selectedDate);
+            const gajiMap = getGajiTukang();
+            document.getElementById("totalMotor").innerHTML = `<i class="fas fa-motorcycle mr-1.5"></i>${stats.totalMotor}`;
+            document.getElementById("totalMobil").innerHTML = `<i class="fas fa-car mr-1.5"></i>${stats.totalMobil}`;
+            document.getElementById("pendapatanKotor").innerHTML = `Rp${stats.pendapatanKotor.toLocaleString()}`;
+            document.getElementById("labaBersih").innerHTML = `Rp${stats.labaBersih.toLocaleString()}`;
+            let gajiHtml = Object.entries(gajiMap).map(([n, j]) => `<div class="flex justify-between py-2"><span>${n}</span><span style="color:#6ee7b7;">Rp${j.toLocaleString()}</span></div>`).join('');
+            document.getElementById("gajiTukangList").innerHTML = gajiHtml || '<p class="text-center text-sm">Belum ada transaksi</p>';
+            document.getElementById("totalGajiTukang").innerHTML = `Rp${Object.values(gajiMap).reduce((a,b)=>a+b,0).toLocaleString()}`;
+            if (chartInstance) chartInstance.destroy();
+            const weeklyData = getWeeklyData();
+            chartInstance = new Chart(document.getElementById("profitChart"), { type: 'line', data: { labels: Object.keys(weeklyData).map(d => d.slice(5)), datasets: [{ label: 'Laba', data: Object.values(weeklyData), borderColor: '#d4af37', backgroundColor: 'rgba(212,175,55,0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false } });
+            let trHtml = stats.transaksiHari.map(t => `<div class="flex justify-between py-2 border-b border-white/5"><div><span class="font-medium">${t.namaLayanan}</span><span class="text-xs ml-2 text-gray-400">${t.platNomor || '-'}</span><span class="text-xs ml-2" style="color:var(--gold-light);">${t.namaTukang}</span></div><span class="font-semibold">Rp${t.harga.toLocaleString()}</span></div>`).join('');
+            document.getElementById("transaksiHariIni").innerHTML = trHtml || '<p class="text-center text-sm">Belum ada transaksi hari ini</p>';
+            document.getElementById("selectedDate").innerHTML = `<i class="fas fa-calendar-day mr-2"></i>${selectedDate}`;
+        }
+
+        function renderLayananList() {
+            const container = document.getElementById("layananList");
+            if (!container) return;
+            if (layananList.length === 0) { container.innerHTML = '<div class="glass-card p-8 text-center"><p class="text-sm" style="color:var(--text-secondary);">Belum ada layanan cuci.</p></div>'; return; }
+            container.innerHTML = layananList.map(l => `<div class="glass-card p-4 flex justify-between items-center"><div><p class="font-bold">${l.nama}</p><p class="text-xs" style="color:var(--text-secondary);">Harga: Rp${l.harga.toLocaleString()} | Jasa: Rp${l.jasaTukang.toLocaleString()}</p></div><button onclick="hapusLayanan('${l.id}')" class="btn-delete"><i class="fas fa-trash"></i></button></div>`).join('');
+        }
+
+        function renderTransaksiButtons() {
+            const container = document.getElementById("transaksiButtons");
+            if (!container) return;
+            if (layananList.length === 0) { container.innerHTML = '<div class="glass-card p-6 col-span-2 text-center"><p class="text-sm">Tambahkan layanan dulu</p></div>'; return; }
+            if (tukangList.length === 0) { container.innerHTML = '<div class="glass-card p-6 col-span-2 text-center"><p class="text-sm" style="color:var(--gold);">Tambahkan tukang cuci dulu</p></div>'; return; }
+            container.innerHTML = layananList.map(l => `<button onclick="pilihLayanan('${l.id}', '${l.nama}', ${l.harga}, ${l.jasaTukang})" class="transaksi-btn"><i class="fas fa-soap text-xl mb-2" style="color:var(--gold);"></i><p class="font-bold text-sm">${l.nama}</p><p class="text-xs" style="color:var(--gold-light);">Rp${l.harga.toLocaleString()}</p></button>`).join('');
+        }
+
+        window.pilihLayanan = async function(layananId, nama, harga, jasaTukang) {
+            // STEP 1: Input Plat Nomor
+            const platResult = await showModal({
+                icon: '<i class="fas fa-car-side" style="color:var(--gold);"></i>',
+                title: 'Input Plat Nomor',
+                desc: 'Masukkan plat nomor kendaraan',
+                inputs: [{ key: 'plat', placeholder: 'Contoh: B 1234 CD', value: '' }],
+                confirmText: 'Lanjut'
+            });
+            if (!platResult || !platResult.values.plat) { showToast('Plat nomor wajib diisi!', 'error'); return; }
+            const platNomor = platResult.values.plat.toUpperCase();
+            
+            // STEP 2: Pilih Tukang Cuci
+            const options = tukangList.map(t => ({ label: t.nama, id: t.id, nama: t.nama }));
+            const tukangResult = await showModal({
+                icon: '<i class="fas fa-hand-pointer" style="color:var(--gold);"></i>',
+                title: nama,
+                desc: `Harga: Rp${harga.toLocaleString()} | Plat: ${platNomor}`,
+                options: options,
+                confirmText: 'Catat Transaksi'
+            });
+            if (tukangResult) {
+                await addDoc(collection(db, "users", currentUser.uid, "transaksi"), {
+                    layananId, namaLayanan: nama, harga, jasaTukang,
+                    tukangId: tukangResult.selectedOption.id, namaTukang: tukangResult.selectedOption.nama,
+                    platNomor: platNomor,
+                    tanggal: new Date().toISOString().split('T')[0],
+                    timestamp: Timestamp.now()
+                });
+                showToast(`✅ ${nama} - Plat ${platNomor} - Tukang: ${tukangResult.selectedOption.nama}`, 'success');
+                await loadAllData();
+            }
+        };
+
+        async function catatTransaksi(layananId, namaLayanan, harga, jasaTukang, tukangId, namaTukang, platNomor) {
+            await addDoc(collection(db, "users", currentUser.uid, "transaksi"), {
+                layananId, namaLayanan, harga, jasaTukang, tukangId, namaTukang, platNomor,
+                tanggal: new Date().toISOString().split('T')[0], timestamp: Timestamp.now()
+            });
+        }
+
+        window.hapusLayanan = async function(id) { if (confirm('Hapus layanan ini?')) { await deleteDoc(doc(db, "users", currentUser.uid, "layanan", id)); loadAllData(); } };
+        window.hapusTukang = async function(id) { if (confirm('Hapus tukang ini?')) { await deleteDoc(doc(db, "users", currentUser.uid, "tukang", id)); loadAllData(); } };
+
+        async function tambahLayanan(nama, harga, jasaTukang) { await addDoc(collection(db, "users", currentUser.uid, "layanan"), { nama, harga: parseInt(harga), jasaTukang: parseInt(jasaTukang), createdAt: Timestamp.now() }); loadAllData(); }
+        async function tambahTukang(nama) { await addDoc(collection(db, "users", currentUser.uid, "tukang"), { nama, aktif: true, tanggalGabung: new Date().toISOString().split('T')[0] }); loadAllData(); }
+
+        function renderTukangList() {
+            const container = document.getElementById("tukangList");
+            if (!container) return;
+            if (tukangList.length === 0) { container.innerHTML = '<div class="glass-card p-8 text-center"><p class="text-sm" style="color:var(--text-secondary);">Belum ada tukang cuci.</p></div>'; return; }
+            container.innerHTML = tukangList.map(t => `<div class="glass-card p-4 flex justify-between items-center"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center font-bold" style="background:rgba(212,175,55,0.15);color:var(--gold);">${t.nama.charAt(0)}</div><div><p class="font-bold">${t.nama}</p><p class="text-xs" style="color:var(--text-secondary);">Bergabung: ${t.tanggalGabung}</p></div></div><button onclick="hapusTukang('${t.id}')" class="btn-delete"><i class="fas fa-trash"></i></button></div>`).join('');
+        }
+
+        function changeDate(days) { let d = new Date(selectedDate); d.setDate(d.getDate() + days); selectedDate = d.toISOString().split('T')[0]; renderDashboard(); }
+
+        function initEventListeners() {
+            document.getElementById("loginBtn").onclick = () => { const e = document.getElementById("loginEmail").value, p = document.getElementById("loginPassword").value; if (e && p) handleLogin(e, p); else showToast('Isi email dan password', 'error'); };
+            document.getElementById("registerBtn").onclick = () => { const e = document.getElementById("registerEmail").value, p = document.getElementById("registerPassword").value; if (e && p.length >= 6) handleRegister(e, p); else showToast('Email dan password minimal 6 karakter', 'error'); };
+            document.getElementById("logoutBtn").onclick = handleLogout;
+            document.getElementById("tambahLayananBtn").onclick = async () => { const r = await showModal({ icon: '<i class="fas fa-plus-circle"></i>', title: 'Tambah Layanan', inputs: [{ key: 'nama', placeholder: 'Nama layanan (Cuci Motor)' }, { key: 'harga', placeholder: 'Harga', type: 'number' }, { key: 'jasa', placeholder: 'Jasa tukang', type: 'number' }], confirmText: 'Tambah' }); if (r) tambahLayanan(r.values.nama, r.values.harga, r.values.jasa); };
+            document.getElementById("tambahTukangBtn").onclick = async () => { const r = await showModal({ icon: '<i class="fas fa-user-plus"></i>', title: 'Tambah Tukang', inputs: [{ key: 'nama', placeholder: 'Nama tukang' }], confirmText: 'Tambah' }); if (r) tambahTukang(r.values.nama); };
+            document.getElementById("prevDay").onclick = () => changeDate(-1);
+            document.getElementById("nextDay").onclick = () => changeDate(1);
+            document.getElementById("todayBtn").onclick = () => { selectedDate = new Date().toISOString().split('T')[0]; renderDashboard(); };
+        }
+
+        function initTabs() {
+            document.querySelectorAll('.tab-luxury').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tab = btn.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                    document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).style.display = 'block';
+                    document.querySelectorAll('.tab-luxury').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    if (tab === 'dashboard') renderDashboard();
+                    if (tab === 'laporanTukang') renderLaporanTukang();
+                });
+            });
+        }
+
+        onAuthStateChanged(auth, (user) => { currentUser = user; if (user) showAppScreen(); else showAuthScreen(); });
+        document.addEventListener("DOMContentLoaded", () => { initEventListeners(); initTabs(); });
+    </script>
+</body>
+                  </html>

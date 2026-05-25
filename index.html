@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CarWash99 - Manajemen Cucian Premium</title>
+    <meta name="description" content="Aplikasi manajemen cuci mobil premium dengan lisensi dan multi-level user">
+    <meta name="theme-color" content="#040a1a">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --bg-deep: #030810;
+            --bg-card: rgba(10, 22, 50, 0.5);
+            --border-glass: rgba(255, 255, 255, 0.06);
+            --border-gold: rgba(212, 175, 55, 0.3);
+            --gold: #d4af37;
+            --gold-light: #f0c040;
+            --text-primary: #eef2ff;
+            --text-secondary: #7b96c4;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        .font-display { font-family: 'Playfair Display', serif; }
+        .text-gold { color: var(--gold); }
+        .border-gold { border-color: var(--gold); }
+
+        *:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.2); border-radius: 10px; }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 1;
+            opacity: 0.5;
+        }
+
+        #particleCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+        .mesh-bg {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background:
+                radial-gradient(ellipse 600px 400px at 15% 20%, rgba(37,99,235,0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 500px 500px at 85% 80%, rgba(212,175,55,0.08) 0%, transparent 70%),
+                radial-gradient(ellipse 400px 300px at 50% 50%, rgba(139,92,246,0.05) 0%, transparent 70%);
+            animation: meshShift 20s ease-in-out infinite alternate;
+        }
+        @keyframes meshShift {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(1deg); }
+            100% { transform: scale(1) rotate(-1deg); }
+        }
+
+        .glow-orb {
+            position: fixed; border-radius: 50%;
+            filter: blur(100px); pointer-events: none; z-index: 0;
+            animation: orbFloat 22s ease-in-out infinite;
+        }
+        .glow-orb.a { width: 450px; height: 450px; background: #2563eb; top: -150px; left: -150px; opacity: 0.1; }
+        .glow-orb.b { width: 380px; height: 380px; background: #d4af37; bottom: -120px; right: -120px; opacity: 0.08; }
+        .glow-orb.c { width: 250px; height: 250px; background: #7c3aed; top: 40%; left: 55%; opacity: 0.06; }
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(40px, -50px) scale(1.12); }
+            50% { transform: translate(-30px, 30px) scale(0.92); }
+            75% { transform: translate(50px, 40px) scale(1.06); }
+        }
+
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(28px);
+            border: 1px solid var(--border-glass);
+            border-radius: 22px;
+            transition: all 0.45s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+        }
+        .glass-card:hover {
+            border-color: rgba(212, 175, 55, 0.12);
+            box-shadow: 0 12px 48px rgba(59, 130, 246, 0.06);
+            transform: translateY(-1px);
+        }
+
+        .gold-border { border: 1px solid var(--border-gold); }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #f0c040 100%);
+            color: #040a1a;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.35s ease;
+        }
+        .btn-gold:hover { box-shadow: 0 8px 35px rgba(212, 175, 55, 0.4); transform: translateY(-2px); }
+        .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .btn-blue {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #2563eb 100%);
+            color: #fff;
+            font-weight: 600;
+            border: 1px solid rgba(96, 165, 250, 0.15);
+            cursor: pointer;
+            transition: all 0.35s ease;
+        }
+        .btn-blue:hover { box-shadow: 0 8px 35px rgba(37, 99, 235, 0.4); transform: translateY(-2px); }
+        .btn-blue:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .btn-wa {
+            background: linear-gradient(135deg, #075e54 0%, #128c7e 100%);
+            color: white;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.35s ease;
+        }
+        .btn-wa:hover { box-shadow: 0 8px 35px rgba(18, 140, 126, 0.4); transform: translateY(-2px); }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.35s ease;
+        }
+        .btn-success:hover { box-shadow: 0 8px 35px rgba(16, 185, 129, 0.4); transform: translateY(-2px); }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.35s ease;
+        }
+        .btn-danger:hover { box-shadow: 0 8px 35px rgba(239, 68, 68, 0.4); transform: translateY(-2px); }
+
+        .lux-input {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 15px 20px;
+            color: var(--text-primary);
+            font-size: 15px;
+            width: 100%;
+            outline: none;
+            transition: all 0.35s ease;
+        }
+        .lux-input::placeholder { color: rgba(123, 150, 196, 0.4); }
+        .lux-input:focus {
+            border-color: rgba(212, 175, 55, 0.5);
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.06);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .lux-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .tabs-container {
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            padding-bottom: 4px;
+        }
+        .tabs-container::-webkit-scrollbar { height: 2px; }
+        .tabs-container::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .tabs-container::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.3); border-radius: 10px; }
+        
+        .tab-luxury {
+            display: inline-flex;
+            padding: 8px 12px;
+            font-weight: 600;
+            font-size: 11px;
+            color: var(--text-secondary);
+            border-radius: 12px;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            transition: all 0.35s ease;
+            white-space: nowrap;
+        }
+        .tab-luxury.active {
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.08);
+            border: 1px solid rgba(212, 175, 55, 0.18);
+        }
+        .tab-luxury:not(.active):hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        body.staff-mode .admin-only { display: none !important; }
+
+        .role-badge {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 9px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(3, 8, 16, 0.95);
+            backdrop-filter: blur(16px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.35s ease;
+        }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        .modal-box {
+            background: linear-gradient(155deg, #0d1b3e 0%, #060e22 100%);
+            border: 1px solid rgba(212, 175, 55, 0.18);
+            border-radius: 28px;
+            padding: 24px;
+            max-width: 420px;
+            width: 100%;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-overlay.show .modal-box { transform: scale(1); }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 320px;
+        }
+        .toast {
+            background: linear-gradient(135deg, #0d1b3e, #132456);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 18px;
+            padding: 14px 22px;
+            color: var(--text-primary);
+            font-size: 13px;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .toast.show { transform: translateX(0); }
+
+        .gold-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212,175,55,0.35), transparent);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 9px;
+            font-weight: 600;
+        }
+        .status-available { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .status-busy { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .status-progress { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+        .progress-item { position: relative; overflow: hidden; }
+        .progress-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--gold);
+            border-radius: 3px;
+        }
+
+        .reward-card {
+            background: linear-gradient(135deg, rgba(212,175,55,0.08), rgba(37,99,235,0.05));
+            border: 1px solid rgba(212,175,55,0.15);
+            border-radius: 16px;
+        }
+
+        .shimmer-text { 
+            background: linear-gradient(90deg, var(--gold) 0%, #f5d98c 20%, #fff 40%, #f5d98c 60%, var(--gold) 80%, #f5d98c 100%); 
+            background-size: 300% auto; 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            background-clip: text; 
+            animation: shimmerText 5s linear infinite; 
+        }
+        @keyframes shimmerText { 
+            0% { background-position: -300% center; } 
+            100% { background-position: 300% center; } 
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 24px 16px;
+            color: rgba(139, 163, 204, 0.5);
+        }
+        .empty-state i { font-size: 24px; margin-bottom: 8px; display: block; }
+
+        .search-input {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-size: 12px;
+            width: 100%;
+            outline: none;
+        }
+        .search-input::placeholder { color: rgba(123,150,196,0.3); }
+        .search-input:focus { border-color: rgba(212,175,55,0.3); }
+
+        .confirm-dialog {
+            position: fixed;
+            inset: 0;
+            background: rgba(3,8,16,0.8);
+            backdrop-filter: blur(8px);
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .confirm-dialog.show { display: flex; }
+        .confirm-box {
+            background: linear-gradient(155deg, #0d1b3e, #060e22);
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 24px;
+            padding: 24px;
+            max-width: 360px;
+            width: 100%;
+            text-align: center;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+            #particleCanvas { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mesh-bg"></div>
+    <canvas id="particleCanvas"></canvas>
+    <div class="glow-orb a"></div>
+    <div class="glow-orb b"></div>
+    <div class="glow-orb c"></div>
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Confirm Dialog -->
+    <div class="confirm-dialog" id="confirmDialog">
+        <div class="confirm-box">
+            <i class="fas fa-exclamation-triangle text-2xl text-red-400 mb-3"></i>
+            <h3 class="font-display text-lg font-bold mb-2" id="confirmTitle">Konfirmasi</h3>
+            <p class="text-xs text-gray-400 mb-5" id="confirmMessage">Yakin ingin menghapus?</p>
+            <div class="flex gap-3">
+                <button id="confirmCancelBtn" class="flex-1 py-2.5 rounded-xl text-sm font-semibold cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button>
+                <button id="confirmOkBtn" class="btn-danger flex-1 py-2.5 rounded-xl text-sm cursor-pointer">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== LAYAR LISENSI ==================== -->
+    <div id="licenseScreen" class="min-h-screen flex items-center justify-center p-4 relative z-10">
+        <div class="glass-card gold-border p-8 max-w-md w-full">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-24 h-24 rounded-full mb-5" style="background:linear-gradient(135deg,rgba(37,99,235,0.15),rgba(212,175,55,0.12));border:2px solid rgba(212,175,55,0.2);">
+                    <i class="fas fa-key text-4xl" style="color:var(--gold);"></i>
+                </div>
+                <h1 class="font-display text-3xl font-black mb-2 shimmer-text">Aktivasi Lisensi</h1>
+                <p class="text-xs tracking-wide uppercase" style="color:var(--text-secondary);">Masukkan kode lisensi untuk memulai</p>
+            </div>
+            <div class="mb-4">
+                <input type="text" id="licenseKey" placeholder="XXXX-XXXX-XXXX-XXXX" class="lux-input text-center text-lg tracking-wider uppercase" autocomplete="off" style="letter-spacing: 2px;">
+                <div id="licenseError" class="text-xs text-red-400 mt-2 text-center hidden"></div>
+            </div>
+            <div class="mb-6">
+                <input type="email" id="licenseEmail" placeholder="Email Owner (untuk aktivasi)" class="lux-input text-center" autocomplete="email">
+                <p class="text-[9px] text-gray-500 text-center mt-1">*Email ini akan menjadi akun Owner permanen</p>
+                <div id="licenseSuccess" class="text-xs text-green-400 mt-2 text-center hidden"></div>
+            </div>
+            <button id="activateLicenseBtn" class="btn-gold w-full py-4 rounded-xl font-semibold text-sm tracking-wide">
+                <i class="fas fa-unlock-alt mr-2"></i>AKTIVASI LISENSI
+            </button>
+            <div class="mt-6 text-center">
+                <p class="text-[10px]" style="color:rgba(139,163,204,0.4);"><i class="fas fa-shield-alt mr-1"></i> Lisensi ini terikat dengan email Anda</p>
+                <p class="text-[10px] mt-2" style="color:rgba(139,163,204,0.3);">Butuh lisensi? Hubungi: <strong>Dharma Labs</strong> - <strong>0858-1120-0013</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== LAYAR LOGIN OWNER & STAF ==================== -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4 relative z-10" style="display:none;">
+        <div class="glass-card gold-border p-8 max-w-md w-full">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-24 h-24 rounded-full mb-5" style="background:linear-gradient(135deg,rgba(37,99,235,0.15),rgba(212,175,55,0.12));border:2px solid rgba(212,175,55,0.2);">
+                    <i class="fas fa-car-side text-4xl" style="color:var(--gold);"></i>
+                </div>
+                <h1 class="font-display text-4xl font-black mb-2 shimmer-text">CarWash99</h1>
+                <p class="text-xs tracking-[4px] uppercase" style="color:var(--text-secondary);">Premium Car Wash Management</p>
+            </div>
+            
+            <div class="flex gap-2 mb-6">
+                <button id="tabOwnerLogin" class="flex-1 py-2 rounded-xl text-sm font-semibold btn-gold">Owner</button>
+                <button id="tabStaffLogin" class="flex-1 py-2 rounded-xl text-sm font-semibold" style="background:rgba(255,255,255,0.05);color:var(--text-secondary);">Staf</button>
+            </div>
+
+            <!-- Form Login Owner -->
+            <div id="ownerLoginForm">
+                <h2 class="text-xs font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider" style="color:var(--gold);"><span class="w-5 h-px" style="background:var(--gold);"></span>Login Owner<span class="flex-1 h-px" style="background:rgba(212,175,55,0.12);"></span></h2>
+                <input type="email" id="ownerEmail" placeholder="Email Owner" class="lux-input mb-3">
+                <input type="password" id="ownerPassword" placeholder="Password" class="lux-input mb-2">
+                <div class="text-right mb-4"><button id="ownerForgotBtn" class="text-xs cursor-pointer" style="color:var(--gold);opacity:0.6;">Lupa password?</button></div>
+                <button id="ownerLoginBtn" class="btn-blue w-full py-4 rounded-xl text-sm tracking-wide">MASUK SEBAGAI OWNER</button>
+                <div class="text-center mt-4"><button id="ownerRegisterBtn" class="text-xs cursor-pointer hover:underline" style="color:var(--text-secondary);">Belum punya akun? Daftar Owner Baru</button></div>
+            </div>
+
+            <!-- Form Login Staf -->
+            <div id="staffLoginForm" style="display:none;">
+                <h2 class="text-xs font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider" style="color:var(--gold);"><span class="w-5 h-px" style="background:var(--gold);"></span>Login Staf<span class="flex-1 h-px" style="background:rgba(212,175,55,0.12);"></span></h2>
+                <input type="text" id="staffInviteCode" placeholder="Kode Undangan" class="lux-input mb-3 text-center uppercase tracking-wider">
+                <input type="password" id="staffPassword" placeholder="Password" class="lux-input mb-2">
+                <div id="staffLoginError" class="text-xs text-red-400 mb-2 text-center hidden"></div>
+                <button id="staffLoginBtn" class="btn-gold w-full py-4 rounded-xl text-sm tracking-wide">MASUK SEBAGAI STAF</button>
+                <div class="text-center mt-4"><p class="text-xs" style="color:var(--text-secondary);">Belum punya kode undangan? Hubungi Owner Anda</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== LAYAR APLIKASI UTAMA ==================== -->
+    <div id="appScreen" class="max-w-md mx-auto pb-24 relative z-10" style="display:none;">
+        
+        <!-- Header -->
+        <header class="sticky top-0 z-50 px-3 pt-3 pb-0">
+            <div class="glass-card gold-border p-3" style="border-radius:0 0 20px 20px;border-top:none;">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:linear-gradient(135deg,rgba(212,175,55,0.18),rgba(37,99,235,0.15));border:1px solid rgba(212,175,55,0.15);">
+                            <i class="fas fa-car-side" style="color:var(--gold);font-size:16px;"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-display text-base font-bold shimmer-text" id="headerNamaUsaha">CarWash99</h1>
+                            <p class="text-[10px]" style="color:var(--text-secondary);">
+                                Halo, <span id="userName" class="font-semibold" style="color:var(--gold-light);"></span>
+                                <span id="userRoleBadge" class="role-badge">Owner</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex gap-1">
+                        <button id="profilUsahaBtn" class="w-8 h-8 rounded-xl flex items-center justify-center admin-only" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);cursor:pointer;" title="Pengaturan"><i class="fas fa-cog text-xs"></i></button>
+                        <button id="logoutAppBtn" class="px-3 py-1.5 rounded-xl text-[10px] font-semibold cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Keluar</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Transaksi Aktif -->
+        <section class="px-3 mt-3">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fas fa-spinner fa-pulse text-sm" style="color:#fbbf24;"></i>
+                <h2 class="font-display text-sm font-bold" style="color:#fbbf24;">Sedang Diproses</h2>
+                <span id="activeCountBadge" class="ml-auto text-[10px] px-2 py-0.5 rounded-full" style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);">0</span>
+            </div>
+            <div id="activeTransaksiList" class="space-y-2">
+                <div class="glass-card p-3 empty-state">
+                    <i class="fas fa-check-circle"></i>
+                    <p class="text-xs">Tidak ada transaksi aktif</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Transaksi Cepat -->
+        <section class="px-3 mt-3">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fas fa-bolt text-sm" style="color:var(--gold);"></i>
+                <h2 class="font-display text-sm font-bold">Transaksi Cepat</h2>
+            </div>
+            <div id="transaksiButtons" class="grid grid-cols-2 gap-2">
+                <div class="glass-card p-4 col-span-2 text-center text-xs">Memuat...</div>
+            </div>
+        </section>
+
+        <!-- Tab Navigation -->
+        <nav class="px-3 mt-3">
+            <div class="glass-card p-1" style="border-radius:16px;">
+                <div class="tabs-container flex gap-1">
+                    <button class="tab-luxury active" data-tab="dashboard"><i class="fas fa-chart-line mr-1"></i>Dashboard</button>
+                    <button class="tab-luxury" data-tab="riwayat"><i class="fas fa-history mr-1"></i>Riwayat</button>
+                    <button class="tab-luxury admin-only" data-tab="layanan"><i class="fas fa-tags mr-1"></i>Layanan</button>
+                    <button class="tab-luxury admin-only" data-tab="tukang"><i class="fas fa-users mr-1"></i>Tukang</button>
+                    <button class="tab-luxury" data-tab="leaderboard"><i class="fas fa-trophy mr-1"></i>Peringkat</button>
+                    <button class="tab-luxury admin-only" data-tab="biaya"><i class="fas fa-receipt mr-1"></i>Biaya</button>
+                    <button class="tab-luxury admin-only" data-tab="laporanTukang"><i class="fas fa-money-bill mr-1"></i>Gaji</button>
+                    <button class="tab-luxury admin-only" data-tab="pengaturan"><i class="fas fa-cog mr-1"></i>Pengaturan</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Dashboard -->
+        <div id="tabDashboard" class="tab-content px-3 mt-3 space-y-3">
+            <div class="glass-card p-3">
+                <div class="flex justify-between items-center">
+                    <button id="prevDay" class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);color:var(--text-secondary);"><i class="fas fa-chevron-left text-xs"></i></button>
+                    <span id="selectedDate" class="font-semibold text-xs" style="color:var(--gold-light);"></span>
+                    <button id="nextDay" class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);color:var(--text-secondary);"><i class="fas fa-chevron-right text-xs"></i></button>
+                </div>
+                <div class="flex justify-between items-center mt-2">
+                    <button id="todayBtn" class="text-[10px] font-semibold cursor-pointer" style="color:var(--gold);background:none;border:none;">Hari Ini</button>
+                    <button id="exportPdfBtn" class="px-3 py-1.5 rounded-xl text-[10px] font-semibold cursor-pointer admin-only" style="background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.18);color:var(--gold);"><i class="fas fa-file-pdf mr-1"></i>PDF</button>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="glass-card p-3 text-center">
+                    <i class="fas fa-motorcycle text-lg mb-1" style="color:#60a5fa;"></i>
+                    <p class="text-xl font-bold" id="totalMotor">0</p>
+                    <p class="text-[10px]">Total Motor</p>
+                </div>
+                <div class="glass-card p-3 text-center">
+                    <i class="fas fa-car text-lg mb-1" style="color:#34d399;"></i>
+                    <p class="text-xl font-bold" id="totalMobil">0</p>
+                    <p class="text-[10px]">Total Mobil</p>
+                </div>
+                <div class="glass-card p-3 text-center">
+                    <i class="fas fa-coins text-lg mb-1" style="color:var(--gold);"></i>
+                    <p class="text-sm font-bold" id="pendapatanKotor">Rp0</p>
+                    <p class="text-[10px]">Pendapatan Kotor</p>
+                </div>
+                <div class="glass-card p-3 text-center">
+                    <i class="fas fa-chart-pie text-lg mb-1" style="color:#a78bfa;"></i>
+                    <p class="text-sm font-bold" id="labaBersih">Rp0</p>
+                    <p class="text-[10px]">Laba Bersih</p>
+                </div>
+            </div>
+            <div class="glass-card p-3 admin-only">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-semibold"><i class="fas fa-truck mr-1" style="color:#f87171;"></i>Biaya Operasional</span>
+                    <button id="tambahBiayaBtn" class="btn-gold px-2 py-1 rounded-lg text-[10px]"><i class="fas fa-plus mr-0.5"></i>Tambah</button>
+                </div>
+                <div id="biayaOperasionalList" class="max-h-24 overflow-y-auto"></div>
+                <div class="mt-2 pt-2 flex justify-between border-t border-white/10">
+                    <span class="text-[10px]">Total Biaya</span>
+                    <span id="totalBiayaOperasional" class="font-bold text-xs text-red-400">Rp0</span>
+                </div>
+            </div>
+            <div class="glass-card p-3">
+                <div style="height:160px;"><canvas id="profitChart"></canvas></div>
+            </div>
+            <div class="glass-card p-3 admin-only">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-semibold"><i class="fas fa-money-bill-wave mr-1"></i>Gaji Tukang</span>
+                    <span id="totalGajiTukang" class="font-bold text-xs" style="color:var(--gold);">Rp0</span>
+                </div>
+                <div id="gajiTukangList" class="max-h-32 overflow-y-auto"></div>
+            </div>
+            <div class="glass-card p-3">
+                <h3 class="text-xs font-semibold mb-2"><i class="fas fa-receipt mr-1"></i>Transaksi Hari Ini</h3>
+                <div id="transaksiHariIni"></div>
+            </div>
+        </div>
+
+        <!-- Riwayat -->
+        <div id="tabRiwayat" class="tab-content px-3 mt-3" style="display:none;">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="font-display text-sm font-bold"><i class="fas fa-history mr-1"></i>Riwayat Transaksi</h2>
+                <input type="text" id="searchRiwayat" placeholder="Cari plat atau layanan..." class="search-input w-40">
+            </div>
+            <div id="riwayatTransaksiList" class="space-y-2"></div>
+        </div>
+
+        <!-- Layanan (Admin only) -->
+        <div id="tabLayanan" class="tab-content px-3 mt-3" style="display:none;">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="font-display text-sm font-bold"><i class="fas fa-tags mr-1"></i>Layanan</h2>
+                <button id="tambahLayananBtn" class="btn-gold px-3 py-1.5 rounded-xl text-[10px]">+ Tambah</button>
+            </div>
+            <div id="layananList" class="space-y-2"></div>
+        </div>
+
+        <!-- Tukang (Admin only) -->
+        <div id="tabTukang" class="tab-content px-3 mt-3" style="display:none;">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="font-display text-sm font-bold"><i class="fas fa-users mr-1"></i>Tukang</h2>
+                <button id="tambahTukangBtn" class="btn-gold px-3 py-1.5 rounded-xl text-[10px]">+ Tambah</button>
+            </div>
+            <div class="glass-card p-3 mb-3">
+                <div class="flex justify-between items-center">
+                    <div><span class="status-badge status-available text-[10px]">Tersedia</span> <span id="availableCount" class="text-xs ml-1">0</span></div>
+                    <div><span class="status-badge status-busy text-[10px]">Bekerja</span> <span id="busyCount" class="text-xs ml-1">0</span></div>
+                </div>
+            </div>
+            <div id="tukangList" class="space-y-2"></div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div id="tabLeaderboard" class="tab-content px-3 mt-3" style="display:none;">
+            <div class="flex gap-2 mb-3">
+                <button id="leaderboardWeeklyBtn" class="btn-gold flex-1 py-1.5 rounded-xl text-xs">Mingguan</button>
+                <button id="leaderboardMonthlyBtn" class="btn-blue flex-1 py-1.5 rounded-xl text-xs">Bulanan</button>
+            </div>
+            <div class="reward-card mb-3 p-3">
+                <div class="flex items-center gap-2 mb-2"><i class="fas fa-gift text-gold text-xs"></i><span class="text-xs font-bold text-gold">🎁 Reward</span></div>
+                <div class="text-[10px] text-gray-300 space-y-1">
+                    <p>🏆 Peringkat 1: Bonus +Rp50.000</p>
+                    <p>⭐ Peringkat 2: Bonus +Rp30.000</p>
+                    <p>✨ Peringkat 3: Bonus +Rp20.000</p>
+                </div>
+            </div>
+            <div id="leaderboardContent" class="space-y-2">
+                <div class="text-center py-5 text-xs text-gray-400">Memuat data...</div>
+            </div>
+        </div>
+
+        <!-- Biaya (Admin only) -->
+        <div id="tabBiaya" class="tab-content px-3 mt-3" style="display:none;">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="font-display text-sm font-bold"><i class="fas fa-receipt mr-1"></i>Riwayat Biaya</h2>
+                <button id="tambahBiayaDariTabBtn" class="btn-gold px-3 py-1.5 rounded-xl text-[10px]">+ Tambah</button>
+            </div>
+            <div id="riwayatBiayaList" class="space-y-2"></div>
+        </div>
+
+        <!-- Gaji (Admin only) -->
+        <div id="tabLaporanTukang" class="tab-content px-3 mt-3" style="display:none;">
+            <h2 class="font-display text-sm font-bold mb-3"><i class="fas fa-money-bill-wave mr-1"></i>Rekap Gaji Tukang</h2>
+            <div id="laporanTukangDetail" class="space-y-2"></div>
+        </div>
+
+        <!-- Pengaturan (Admin only) -->
+        <div id="tabPengaturan" class="tab-content px-3 mt-3" style="display:none;">
+            <h2 class="font-display text-sm font-bold mb-3"><i class="fas fa-cog mr-1"></i>Pengaturan</h2>
+            
+            <div class="glass-card p-3 mb-3">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2"><i class="fas fa-users text-gold"></i><span class="text-sm font-semibold">Manajemen Staf</span></div>
+                    <button id="tambahStaffBtn" class="btn-gold px-3 py-1.5 rounded-lg text-[10px]"><i class="fas fa-plus mr-1"></i>Tambah Staf</button>
+                </div>
+                <div id="staffList" class="space-y-2 max-h-60 overflow-y-auto">
+                    <div class="text-center text-xs text-gray-400 py-3">Belum ada staf</div>
+                </div>
+                <p class="text-[9px] text-gray-500 mt-2 text-center">💡 Staf hanya bisa input transaksi, tidak bisa edit harga atau data lainnya</p>
+            </div>
+
+            <div class="glass-card p-3">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2"><i class="fas fa-store text-gold"></i><span class="text-sm font-semibold">Profil Usaha</span></div>
+                    <button id="editProfilBtn" class="btn-gold px-3 py-1.5 rounded-lg text-[10px]">Edit Profil</button>
+                </div>
+                <div id="tampilanProfil" class="mt-2 text-[10px] text-gray-400 space-y-1">
+                    <p><strong>Nama:</strong> <span id="showNamaUsaha">-</span></p>
+                    <p><strong>Alamat:</strong> <span id="showAlamatUsaha">-</span></p>
+                    <p><strong>Telepon:</strong> <span id="showTeleponUsaha">-</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Profil Usaha -->
+        <div class="modal-overlay" id="profilUsahaModal">
+            <div class="modal-box">
+                <div class="text-center mb-4"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);"><i class="fas fa-building text-2xl" style="color:var(--gold);"></i></div></div>
+                <h3 class="font-display text-xl font-bold text-center mb-1">Profil Usaha</h3>
+                <p class="text-center text-xs mb-5" style="color:var(--text-secondary);">Data akan tercetak di struk & laporan</p>
+                <div class="space-y-3 mb-5">
+                    <input type="text" id="namaUsaha" placeholder="Nama Usaha" class="lux-input">
+                    <input type="text" id="alamatUsaha" placeholder="Alamat lengkap" class="lux-input">
+                    <input type="tel" id="teleponUsaha" placeholder="Nomor telepon" class="lux-input">
+                    <textarea id="footerStruk" placeholder="Footer struk" rows="2" class="lux-input"></textarea>
+                </div>
+                <div class="flex gap-3">
+                    <button id="closeProfilModal" class="flex-1 py-3 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button>
+                    <button id="saveProfilBtn" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer">Simpan Profil</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Tambah Staf -->
+        <div class="modal-overlay" id="tambahStaffModal">
+            <div class="modal-box">
+                <div class="text-center mb-4"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);"><i class="fas fa-user-plus text-2xl" style="color:var(--gold);"></i></div></div>
+                <h3 class="font-display text-xl font-bold text-center mb-1">Tambah Staf</h3>
+                <p class="text-center text-xs mb-5" style="color:var(--text-secondary);">Staf akan memiliki akses terbatas</p>
+                <div class="space-y-3 mb-5">
+                    <input type="text" id="staffNama" placeholder="Nama Staf" class="lux-input">
+                    <input type="email" id="staffEmailInput" placeholder="Email Staf" class="lux-input">
+                </div>
+                <div class="flex gap-3">
+                    <button id="closeStaffModal" class="flex-1 py-3 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button>
+                    <button id="confirmStaffBtn" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer">Buat Kode Undangan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Tampilkan Kode Undangan -->
+        <div class="modal-overlay" id="inviteCodeModal">
+            <div class="modal-box">
+                <div class="text-center mb-4"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);"><i class="fas fa-key text-2xl" style="color:var(--gold);"></i></div></div>
+                <h3 class="font-display text-xl font-bold text-center mb-1">Kode Undangan Staf</h3>
+                <p class="text-center text-xs mb-5" style="color:var(--text-secondary);">Kirim kode ini ke staf Anda</p>
+                <div class="bg-black/30 p-4 rounded-xl text-center mb-5">
+                    <p id="inviteCodeDisplay" class="text-2xl font-mono tracking-wider text-gold font-bold">XXXX-XXXX-XXXX</p>
+                </div>
+                <div class="flex gap-3">
+                    <button id="closeInviteModal" class="flex-1 py-3 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Tutup</button>
+                    <button id="copyInviteBtn" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer"><i class="fas fa-copy mr-1"></i>Salin Kode</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Transaksi -->
+        <div class="modal-overlay" id="transaksiModal">
+            <div class="modal-box">
+                <div class="text-center mb-3"><div class="inline-flex items-center justify-center w-14 h-14 rounded-full mb-2" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);"><i class="fas fa-car-side text-xl" style="color:var(--gold);"></i></div></div>
+                <h3 id="transaksiModalTitle" class="font-display text-lg font-bold text-center mb-1">Cuci Motor</h3>
+                <p id="transaksiModalPrice" class="text-center text-xs mb-4" style="color:var(--gold);">Harga: Rp15.000</p>
+                <div class="space-y-3 mb-4">
+                    <input type="text" id="platNomor" placeholder="Plat nomor (contoh: B 1234 CD)" class="lux-input" autocomplete="off">
+                    <select id="pilihTukang" class="lux-input"><option value="">Pilih tukang cuci</option></select>
+                    <div id="rekomendasiTukang" class="text-xs text-center" style="color:var(--gold);"></div>
+                </div>
+                <div class="flex gap-3">
+                    <button id="closeTransaksiModal" class="flex-1 py-2.5 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button>
+                    <button id="confirmTransaksiBtn" class="btn-gold flex-1 py-2.5 rounded-xl text-sm cursor-pointer"><i class="fas fa-play mr-1"></i>Mulai Cuci</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Edit Layanan -->
+        <div class="modal-overlay" id="editLayananModal">
+            <div class="modal-box">
+                <div class="text-center mb-4"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);"><i class="fas fa-tags text-2xl" style="color:var(--gold);"></i></div></div>
+                <h3 class="font-display text-xl font-bold text-center mb-1" id="editLayananModalTitle">Edit Layanan</h3>
+                <div class="space-y-3 mb-5">
+                    <input type="text" id="editLayananNama" placeholder="Nama layanan" class="lux-input">
+                    <input type="number" id="editLayananHarga" placeholder="Harga" class="lux-input">
+                    <input type="number" id="editLayananJasa" placeholder="Jasa tukang" class="lux-input">
+                </div>
+                <div class="flex gap-3">
+                    <button id="closeEditLayananModal" class="flex-1 py-3 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button>
+                    <button id="saveEditLayananBtn" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer">Simpan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Edit Tukang -->
+        <div class="modal-overlay" id="editTukangModal">
+            <div class="modal-box">
+                <div class="text-center mb-4"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);"><i class="fas fa-user-edit text-2xl" style="color:var(--gold);"></i></div></div>
+                <h3 class="font-display text-xl font-bold text-center mb-1">Edit Tukang Cuci</h3>
+                <p class="text-center text-xs mb-5" style="color:var(--text-secondary);">Ubah nama atau nomor WhatsApp</p>
+                <div class="space-y-3 mb-5">
+                    <input type="text" id="editTukangNama" placeholder="Nama tukang" class="lux-input">
+                    <input type="tel" id="editTukangWa" placeholder="Nomor WhatsApp (contoh: 628123456789)" class="lux-input">
+                </div>
+                <div class="flex gap-3">
+                    <button id="closeEditTukangModal" class="flex-1 py-3 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button>
+                    <button id="saveEditTukangBtn" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer">Simpan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Register Owner -->
+        <div class="modal-overlay" id="registerOwnerModal">
+            <div class="modal-box">
+                <div class="text-center mb-4"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);"><i class="fas fa-user-plus text-2xl" style="color:var(--gold);"></i></div></div>
+                <h3 class="font-display text-xl font-bold text-center mb-1">Daftar Owner Baru</h3>
+                <p class="text-center text-xs mb-5" style="color:var(--text-secondary);">Buat akun untuk mengelola usaha</p>
+                <div class="space-y-3 mb-5">
+                    <input type="email" id="regOwnerEmail" placeholder="Email Owner" class="lux-input">
+                    <input type="password" id="regOwnerPassword" placeholder="Password (min 6 karakter)" class="lux-input">
+                </div>
+                <div class="flex gap-3">
+                    <button id="closeRegisterOwnerModal" class="flex-1 py-3 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button>
+                    <button id="confirmRegisterOwnerBtn" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer">Daftar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Forgot Password -->
+        <div class="modal-overlay" id="forgotPasswordModal">
+            <div class="modal-box">
+                <div class="text-center mb-4"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style="background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(37,99,235,0.08));border:1px solid rgba(212,175,55,0.12);"><i class="fas fa-key text-2xl" style="color:var(--gold);"></i></div></div>
+                <h3 class="font-display text-xl font-bold text-center mb-1">Reset Password</h3>
+                <p class="text-center text-xs mb-5" style="color:var(--text-secondary);">Kami akan kirim link reset ke email Anda</p>
+                <div class="space-y-3 mb-5"><input type="email" id="resetEmail" placeholder="Email terdaftar" class="lux-input"></div>
+                <div class="flex gap-3"><button id="closeForgotModal" class="flex-1 py-3 rounded-xl font-semibold text-sm cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text-secondary);">Batal</button><button id="sendResetLinkBtn" class="btn-gold flex-1 py-3 rounded-xl text-sm cursor-pointer">Kirim Link</button></div>
+            </div>
+        </div>
+
+        <!-- PDF Report Container (Hidden) -->
+        <div id="pdfReportContainer" style="position:absolute;left:-9999px;top:-9999px;width:800px;background:#fff;color:#000;padding:40px;">
+            <div id="pdfReportContent">
+                <h1 style="text-align:center;font-family:serif;margin-bottom:5px;" id="pdfNamaUsaha">CarWash99</h1>
+                <p style="text-align:center;font-size:12px;color:#666;margin-bottom:20px;" id="pdfAlamatUsaha"></p>
+                <hr style="border:1px solid #d4af37;margin-bottom:20px;">
+                <h2 style="text-align:center;font-size:16px;margin-bottom:15px;">Laporan Harian</h2>
+                <p style="text-align:center;font-size:13px;margin-bottom:20px;" id="pdfTanggal"></p>
+                <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px;" id="pdfTable">
+                    <thead><tr style="background:#f8f8f8;"><th style="border:1px solid #ddd;padding:8px;text-align:left;">No</th><th style="border:1px solid #ddd;padding:8px;text-align:left;">Layanan</th><th style="border:1px solid #ddd;padding:8px;text-align:left;">Plat</th><th style="border:1px solid #ddd;padding:8px;text-align:left;">Tukang</th><th style="border:1px solid #ddd;padding:8px;text-align:right;">Harga</th></tr></thead>
+                    <tbody id="pdfTableBody"></tbody>
+                    <tfoot><tr style="font-weight:bold;background:#fffbe6;"><td colspan="4" style="border:1px solid #ddd;padding:8px;text-align:right;">Total</td><td style="border:1px solid #ddd;padding:8px;text-align:right;" id="pdfTotal"></td></tr></tfoot>
+                </table>
+                <div style="font-size:12px;color:#666;text-align:center;margin-top:30px;" id="pdfFooter"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SCRIPT UTAMA ==================== -->
+    <script>
+    (function() {
+        'use strict';
+
+        // ==================== 50 KODE LISENSI TAHUN 2026 ====================
+        const VALID_LICENSES = [
+            "CARWASH-2026-001A-B5F7", "CARWASH-2026-002B-C6G8", "CARWASH-2026-003C-D7H9", "CARWASH-2026-004D-E8I0", "CARWASH-2026-005E-F9J1",
+            "CARWASH-2026-006F-G0K2", "CARWASH-2026-007G-H1L3", "CARWASH-2026-008H-I2M4", "CARWASH-2026-009I-J3N5", "CARWASH-2026-010J-K4O6",
+            "CARWASH-2026-011K-L5P7", "CARWASH-2026-012L-M6Q8", "CARWASH-2026-013M-N7R9", "CARWASH-2026-014N-O8S0", "CARWASH-2026-015O-P9T1",
+            "CARWASH-2026-016P-Q0U2", "CARWASH-2026-017Q-R1V3", "CARWASH-2026-018R-S2W4", "CARWASH-2026-019S-T3X5", "CARWASH-2026-020T-U4Y6",
+            "CARWASH-2026-021U-V5Z7", "CARWASH-2026-022V-W6A8", "CARWASH-2026-023W-X7B9", "CARWASH-2026-024X-Y8C0", "CARWASH-2026-025Y-Z9D1",
+            "CARWASH-2026-026Z-A0E2", "CARWASH-2026-027A-B1F3", "CARWASH-2026-028B-C2G4", "CARWASH-2026-029C-D3H5", "CARWASH-2026-030D-E4I6",
+            "CARWASH-2026-031E-F5J7", "CARWASH-2026-032F-G6K8", "CARWASH-2026-033G-H7L9", "CARWASH-2026-034H-I8M0", "CARWASH-2026-035I-J9N1",
+            "CARWASH-2026-036J-K0O2", "CARWASH-2026-037K-L1P3", "CARWASH-2026-038L-M2Q4", "CARWASH-2026-039M-N3R5", "CARWASH-2026-040N-O4S6",
+            "CARWASH-2026-041O-P5T7", "CARWASH-2026-042P-Q6U8", "CARWASH-2026-043Q-R7V9", "CARWASH-2026-044R-S8W0", "CARWASH-2026-045S-T9X1",
+            "CARWASH-2026-046T-U0Y2", "CARWASH-2026-047U-V1Z3", "CARWASH-2026-048V-W2A4", "CARWASH-2026-049W-X3B5", "CARWASH-2026-050X-Y4C6",
+            "DEMO-2026-ABCD-0001"
+        ];
+
+        // ==================== STORAGE KEYS ====================
+        const SK = {
+            LICENSE_ACTIVE: 'carwash99_license_activated',
+            LICENSE_EMAIL: 'carwash99_license_email',
+            LICENSE_KEY: 'carwash99_license_key',
+            LICENSE_DATE: 'carwash99_license_date',
+            OWNER_ACCOUNTS: 'carwash99_owner_accounts',
+            STAFF_INVITES: 'carwash99_staff_invites',
+            STAFF_ACCOUNTS: 'carwash99_staff_accounts',
+            APP_DATA: 'carwash99_app_data_v3',
+            SESSION: 'carwash99_session_v2'
+        };
+
+        // ==================== UTILITIES ====================
+        function $(id) { return document.getElementById(id); }
+        function formatRupiah(amount) { return 'Rp' + (amount || 0).toLocaleString('id-ID'); }
+        function formatDateId(dateStr) {
+            const d = new Date(dateStr + 'T00:00:00');
+            return d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+        }
+        function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+        function todayStr() { return new Date().toISOString().split('T')[0]; }
+
+        function showToast(msg, type) {
+            const container = $('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+            toast.innerHTML = (icons[type] || 'ℹ️') + ' ' + msg;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 3500);
+        }
+
+        // ==================== DATA MANAGER ====================
+        const Data = {
+            getAppData() {
+                try {
+                    const raw = localStorage.getItem(SK.APP_DATA);
+                    if (raw) return JSON.parse(raw);
+                } catch(e) {}
+                return this.getDefaultAppData();
+            },
+            getDefaultAppData() {
+                return {
+                    layanan: [
+                        { id: generateId(), nama: 'Cuci Motor', harga: 15000, jasaTukang: 5000 },
+                        { id: generateId(), nama: 'Cuci Mobil', harga: 50000, jasaTukang: 15000 }
+                    ],
+                    tukang: [
+                        { id: generateId(), nama: 'Budi', wa: '628123456789' },
+                        { id: generateId(), nama: 'Andi', wa: '' }
+                    ],
+                    transaksi: [],
+                    activeTransaksi: [],
+                    biaya: [],
+                    profil: { nama: 'CarWash99', alamat: '', telepon: '', footer: 'Terima Kasih 🙏' },
+                    tukangStatus: {},
+                    version: 3
+                };
+            },
+            save(data) { localStorage.setItem(SK.APP_DATA, JSON.stringify(data)); },
+            getOwners() {
+                try { return JSON.parse(localStorage.getItem(SK.OWNER_ACCOUNTS) || '{}'); } catch { return {}; }
+            },
+            saveOwners(data) { localStorage.setItem(SK.OWNER_ACCOUNTS, JSON.stringify(data)); },
+            getStaffInvites() {
+                try { return JSON.parse(localStorage.getItem(SK.STAFF_INVITES) || '{}'); } catch { return {}; }
+            },
+            saveStaffInvites(data) { localStorage.setItem(SK.STAFF_INVITES, JSON.stringify(data)); },
+            getStaffAccounts() {
+                try { return JSON.parse(localStorage.getItem(SK.STAFF_ACCOUNTS) || '{}'); } catch { return {}; }
+            },
+            saveStaffAccounts(data) { localStorage.setItem(SK.STAFF_ACCOUNTS, JSON.stringify(data)); },
+            getSession() {
+                try {
+                    const raw = localStorage.getItem(SK.SESSION);
+                    if (!raw) return null;
+                    const s = JSON.parse(raw);
+                    if (Date.now() - s.ts > 86400000) { localStorage.removeItem(SK.SESSION); return null; }
+                    return s;
+                } catch { return null; }
+            },
+            setSession(role, userData) { localStorage.setItem(SK.SESSION, JSON.stringify({ role, userData, ts: Date.now() })); },
+            clearSession() { localStorage.removeItem(SK.SESSION); }
+        };
+
+        // ==================== STATE ====================
+        let appData = Data.getAppData();
+        let currentRole = null;
+        let currentUser = null;
+        let selectedDate = todayStr();
+        let chartInstance = null;
+        let editingTukangId = null;
+        let editingLayananId = null;
+        let selectedLayanan = null;
+        let leaderboardPeriod = 'weekly';
+        let confirmCallback = null;
+
+        // ==================== AUTH FUNCTIONS ====================
+        function isLicenseActivated() { return localStorage.getItem(SK.LICENSE_ACTIVE) === 'true'; }
+
+        function activateLicense(key, email) {
+            if (!key || !email) return { valid: false, message: 'Isi kode lisensi dan email!' };
+            if (!VALID_LICENSES.includes(key.toUpperCase())) return { valid: false, message: '❌ Kode lisensi tidak valid!' };
+            localStorage.setItem(SK.LICENSE_ACTIVE, 'true');
+            localStorage.setItem(SK.LICENSE_KEY, key);
+            localStorage.setItem(SK.LICENSE_EMAIL, email);
+            localStorage.setItem(SK.LICENSE_DATE, new Date().toISOString());
+            const owners = Data.getOwners();
+            if (!owners[email]) {
+                owners[email] = { email: email, password: '', isFromLicense: true, createdAt: new Date().toISOString() };
+                Data.saveOwners(owners);
+            }
+            return { valid: true, message: '✅ Lisensi valid! Silakan buat password untuk akun Owner Anda.' };
+        }
+
+        function generateInviteCode() {
+            return 'STAFF-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+        }
+
+        function addStaffInvite(nama, email, ownerId) {
+            const invites = Data.getStaffInvites();
+            const code = generateInviteCode();
+            invites[code] = { nama, email, ownerId, used: false, createdAt: new Date().toISOString() };
+            Data.saveStaffInvites(invites);
+            return code;
+        }
+
+        function validateStaffInvite(code, password) {
+            const invites = Data.getStaffInvites();
+            const accounts = Data.getStaffAccounts();
+            const invite = invites[code];
+            if (!invite) return { valid: false, message: 'Kode undangan tidak valid!' };
+            if (invite.used && !accounts[code]) return { valid: false, message: 'Kode undangan sudah digunakan!' };
+            if (!invite.used) {
+                invite.used = true;
+                accounts[code] = { nama: invite.nama, email: invite.email, ownerId: invite.ownerId, password: password, createdAt: new Date().toISOString() };
+                Data.saveStaffInvites(invites);
+                Data.saveStaffAccounts(accounts);
+            }
+            return { valid: true, message: '✅ Login berhasil!', code: code };
+        }
+
+        function verifyStaffLogin(code, password) {
+            const accounts = Data.getStaffAccounts();
+            const acc = accounts[code];
+            return acc && acc.password === password;
+        }
+
+        function registerOwner(email, password) {
+            const owners = Data.getOwners();
+            if (owners[email] && owners[email].password) return { success: false, message: 'Email sudah terdaftar!' };
+            owners[email] = { email, password, createdAt: new Date().toISOString() };
+            Data.saveOwners(owners);
+            return { success: true, message: 'Registrasi berhasil!' };
+        }
+
+        function verifyOwnerLogin(email, password) {
+            const owners = Data.getOwners();
+            const acc = owners[email];
+            if (!acc) return false;
+            if (acc.isFromLicense && !acc.password) return true;
+            return acc.password === password;
+        }
+
+        // ==================== SCREEN MANAGEMENT ====================
+        function showScreen(name) {
+            $('licenseScreen').style.display = 'none';
+            $('loginScreen').style.display = 'none';
+            $('appScreen').style.display = 'none';
+            if (name === 'license') $('licenseScreen').style.display = 'flex';
+            if (name === 'login') $('loginScreen').style.display = 'flex';
+            if (name === 'app') $('appScreen').style.display = 'block';
+        }
+
+        function showAppScreen(role, userData) {
+            currentRole = role;
+            currentUser = userData;
+            Data.setSession(role, userData);
+            showScreen('app');
+            if (role === 'owner') {
+                $('userName').textContent = userData.email || 'Owner';
+                $('userRoleBadge').textContent = 'Owner';
+                document.body.classList.remove('staff-mode');
+            } else {
+                $('userName').textContent = userData.nama || 'Staf';
+                $('userRoleBadge').textContent = 'Staf';
+                document.body.classList.add('staff-mode');
+            }
+            loadProfil();
+            renderAll();
+            switchTab('dashboard');
+        }
+
+        function checkAuthState() {
+            if (!isLicenseActivated()) { showScreen('license'); return; }
+            const session = Data.getSession();
+            if (session) { showAppScreen(session.role, session.userData); }
+            else { showScreen('login'); }
+        }
+
+        // ==================== RENDER FUNCTIONS ====================
+        function renderAll() {
+            renderActiveTransaksi();
+            renderTransaksiButtons();
+            renderDashboard();
+            renderLayananList();
+            renderTukangList();
+            renderRiwayatTransaksi();
+            renderLeaderboard();
+            renderLaporanTukang();
+            renderRiwayatBiaya();
+            renderStaffList();
+            updateStatusCounts();
+        }
+
+        function renderActiveTransaksi() {
+            const container = $('activeTransaksiList');
+            const list = appData.activeTransaksi || [];
+            $('activeCountBadge').textContent = list.length;
+            if (list.length === 0) {
+                container.innerHTML = '<div class="glass-card p-3 empty-state"><i class="fas fa-check-circle"></i><p class="text-xs">Tidak ada transaksi aktif</p></div>';
+                return;
+            }
+            container.innerHTML = list.map(t => {
+                const layanan = appData.layanan.find(l => l.id === t.layananId);
+                const tukang = appData.tukang.find(x => x.id === t.tukangId);
+                return `<div class="glass-card p-2 progress-item">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="font-bold text-sm">${t.platNomor || '-'}</span>
+                            <span class="status-badge status-progress ml-2">ON PROGRESS</span>
+                            <p class="text-[9px] mt-0.5" style="color:var(--text-secondary);">${layanan ? layanan.nama : '-'} &bull; ${tukang ? tukang.nama : '-'}</p>
+                            <p class="text-[9px]" style="color:var(--gold);">${formatRupiah(layanan ? layanan.harga : 0)}</p>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <button onclick="window.appSelesai('${t.id}')" class="btn-success px-2 py-1 rounded-lg text-[9px]"><i class="fas fa-check mr-1"></i>Selesai</button>
+                            <button onclick="window.appBatalkan('${t.id}')" class="text-red-400 text-[9px] hover:underline">Batalkan</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderTransaksiButtons() {
+            const container = $('transaksiButtons');
+            if (appData.layanan.length === 0) {
+                container.innerHTML = '<div class="glass-card p-4 col-span-2 empty-state"><i class="fas fa-info-circle"></i><p class="text-xs">Tambahkan layanan dulu di menu Layanan</p></div>';
+                return;
+            }
+            if (appData.tukang.length === 0) {
+                container.innerHTML = '<div class="glass-card p-4 col-span-2 empty-state"><i class="fas fa-user-slash"></i><p class="text-xs text-yellow-400">Tambahkan tukang dulu di menu Tukang</p></div>';
+                return;
+            }
+            const availableTukang = appData.tukang.filter(t => (appData.tukangStatus[t.id] || 'available') === 'available');
+            if (availableTukang.length === 0) {
+                container.innerHTML = '<div class="glass-card p-4 col-span-2 empty-state"><i class="fas fa-user-clock"></i><p class="text-xs text-yellow-400">Semua tukang sedang sibuk</p></div>';
+                return;
+            }
+            container.innerHTML = appData.layanan.map(l => `
+                <button onclick="window.appBukaTransaksi('${l.id}')" class="glass-card p-3 text-center hover:border-gold transition">
+                    <i class="fas fa-soap text-xl mb-1" style="color:var(--gold);"></i>
+                    <p class="font-bold text-sm">${l.nama}</p>
+                    <p class="text-[9px] text-gold">${formatRupiah(l.harga)}</p>
+                </button>
+            `).join('');
+        }
+
+        function renderDashboard() {
+            const stats = getStatsByDate(selectedDate);
+            const gaji = getGajiTukangByDate(selectedDate);
+            $('totalMotor').textContent = stats.tm;
+            $('totalMobil').textContent = stats.tb;
+            $('pendapatanKotor').textContent = formatRupiah(stats.pk);
+            $('labaBersih').textContent = formatRupiah(stats.laba);
+            $('totalBiayaOperasional').textContent = formatRupiah(stats.totalBiaya);
+            $('selectedDate').textContent = formatDateId(selectedDate);
+
+            let gajiHtml = Object.entries(gaji).map(([n, total]) => 
+                `<div class="flex justify-between py-1"><span class="text-xs">${n}</span><span class="text-green-400 text-xs font-semibold">${formatRupiah(total)}</span></div>`
+            ).join('');
+            $('gajiTukangList').innerHTML = gajiHtml || '<p class="text-center text-xs text-gray-400 py-2">Belum ada transaksi</p>';
+            $('totalGajiTukang').textContent = formatRupiah(Object.values(gaji).reduce((a, b) => a + b, 0));
+
+            renderChart();
+
+            let trHtml = stats.transaksiHari.map((t, i) => `
+                <div class="flex justify-between py-1.5 ${i < stats.transaksiHari.length - 1 ? 'border-b border-white/5' : ''}">
+                    <div>
+                        <span class="text-xs font-medium">${t.namaLayanan}</span>
+                        <span class="text-[9px] text-gray-400 ml-1">(${t.platNomor || '-'})</span>
+                        <br><span class="text-[9px] text-gray-400">${t.namaTukang}</span>
+                    </div>
+                    <span class="text-xs font-semibold" style="color:var(--gold-light);">${formatRupiah(t.harga)}</span>
+                </div>
+            `).join('');
+            $('transaksiHariIni').innerHTML = trHtml || '<p class="text-center text-xs text-gray-400 py-2">Belum ada transaksi</p>';
+
+            let biayaHtml = stats.biayaHari.map(b => `
+                <div class="flex justify-between py-1"><span class="text-xs">${b.kategori}</span><span class="text-red-400 text-xs">-${formatRupiah(b.nominal)}</span></div>
+            `).join('');
+            $('biayaOperasionalList').innerHTML = biayaHtml || '<p class="text-center text-xs text-gray-400 py-2">Belum ada biaya</p>';
+        }
+
+        function renderChart() {
+            if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+            const weekly = getWeeklyData();
+            const ctx = $('profitChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Object.keys(weekly).map(d => d.slice(5)),
+                    datasets: [{
+                        label: 'Laba Bersih',
+                        data: Object.values(weekly),
+                        borderColor: '#d4af37',
+                        backgroundColor: 'rgba(212,175,55,0.08)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#d4af37',
+                        pointBorderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: 'rgba(123,150,196,0.5)', font: { size: 10 } }, grid: { display: false } },
+                        y: { ticks: { color: 'rgba(123,150,196,0.5)', font: { size: 10 }, callback: v => 'Rp' + (v/1000).toFixed(0) + 'k' }, grid: { color: 'rgba(255,255,255,0.03)' } }
+                    }
+                }
+            });
+        }
+
+        function renderLayananList() {
+            const container = $('layananList');
+            if (appData.layanan.length === 0) {
+                container.innerHTML = '<div class="glass-card p-4 empty-state"><i class="fas fa-tags"></i><p class="text-xs">Belum ada layanan</p></div>';
+                return;
+            }
+            container.innerHTML = appData.layanan.map(l => `
+                <div class="glass-card p-3 flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-sm">${l.nama}</p>
+                        <p class="text-[10px]" style="color:var(--text-secondary);">Harga: ${formatRupiah(l.harga)} | Jasa: ${formatRupiah(l.jasaTukang)}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="window.appEditLayanan('${l.id}')" class="text-blue-400 text-xs hover:underline">Edit</button>
+                        <button onclick="window.appHapusLayanan('${l.id}')" class="text-red-400 text-xs hover:underline">Hapus</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderTukangList() {
+            const container = $('tukangList');
+            if (appData.tukang.length === 0) {
+                container.innerHTML = '<div class="glass-card p-4 empty-state"><i class="fas fa-users"></i><p class="text-xs">Belum ada tukang</p></div>';
+                return;
+            }
+            container.innerHTML = appData.tukang.map(t => {
+                const status = appData.tukangStatus[t.id] || 'available';
+                return `<div class="glass-card p-3 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style="background:${status === 'busy' ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)'};color:${status === 'busy' ? '#f87171' : '#34d399'};">
+                            ${t.nama.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm">${t.nama}</p>
+                            <p class="text-[10px]" style="color:var(--text-secondary);">WA: ${t.wa || '-'} | <span class="${status === 'busy' ? 'text-red-400' : 'text-green-400'}">${status === 'busy' ? 'Sibuk' : 'Tersedia'}</span></p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="window.appEditTukang('${t.id}')" class="text-blue-400 text-xs hover:underline">Edit</button>
+                        <button onclick="window.appHapusTukang('${t.id}')" class="text-red-400 text-xs hover:underline">Hapus</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderRiwayatTransaksi() {
+            const container = $('riwayatTransaksiList');
+            const search = ($('searchRiwayat')?.value || '').toLowerCase();
+            let list = [...appData.transaksi].sort((a, b) => (b.id > a.id ? 1 : -1));
+            if (search) {
+                list = list.filter(t => (t.platNomor || '').toLowerCase().includes(search) || (t.namaLayanan || '').toLowerCase().includes(search) || (t.namaTukang || '').toLowerCase().includes(search));
+            }
+            if (list.length === 0) {
+                container.innerHTML = '<div class="glass-card p-4 empty-state"><i class="fas fa-history"></i><p class="text-xs">' + (search ? 'Tidak ada hasil pencarian' : 'Belum ada riwayat transaksi') + '</p></div>';
+                return;
+            }
+            const grouped = {};
+            list.forEach(t => {
+                if (!grouped[t.tanggal]) grouped[t.tanggal] = [];
+                grouped[t.tanggal].push(t);
+            });
+            container.innerHTML = Object.entries(grouped).map(([date, items]) => {
+                const dayTotal = items.reduce((s, t) => s + t.harga, 0);
+                return `<div class="mb-3">
+                    <div class="flex justify-between items-center mb-1 px-1">
+                        <span class="text-[10px] font-semibold uppercase tracking-wider" style="color:var(--gold);">${formatDateId(date)}</span>
+                        <span class="text-[10px] font-bold" style="color:var(--gold-light);">${formatRupiah(dayTotal)}</span>
+                    </div>
+                    ${items.map(t => `
+                        <div class="glass-card p-2 mb-1.5">
+                            <div class="flex justify-between">
+                                <div>
+                                    <span class="font-bold text-xs">${t.namaLayanan}</span>
+                                    <span class="text-[9px] text-gray-400 ml-1">(${t.platNomor})</span>
+                                </div>
+                                <span class="text-green-400 text-xs font-semibold">${formatRupiah(t.harga)}</span>
+                            </div>
+                            <div class="text-[9px] text-gray-400 mt-0.5">Tukang: ${t.namaTukang} | Jasa: ${formatRupiah(t.jasaTukang)}</div>
+                        </div>
+                    `).join('')}
+                </div>`;
+            }).join('');
+        }
+
+        function renderLeaderboard() {
+            const container = $('leaderboardContent');
+            let startDate = new Date();
+            if (leaderboardPeriod === 'weekly') startDate.setDate(startDate.getDate() - 7);
+            else startDate.setDate(startDate.getDate() - 30);
+            const startDateStr = startDate.toISOString().split('T')[0];
+            let stats = {};
+            appData.tukang.forEach(t => stats[t.nama] = { total: 0, id: t.id });
+            appData.transaksi.forEach(t => {
+                if (t.tanggal >= startDateStr && stats[t.namaTukang]) stats[t.namaTukang].total++;
+            });
+            const sorted = Object.entries(stats).filter(([n, d]) => d.total > 0).sort((a, b) => b[1].total - a[1].total);
+            if (sorted.length === 0) {
+                container.innerHTML = '<div class="glass-card p-4 empty-state"><i class="fas fa-trophy"></i><p class="text-xs">Belum ada data periode ini</p></div>';
+                return;
+            }
+            container.innerHTML = sorted.map(([nama, data], idx) => {
+                let medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+                let reward = idx === 0 ? '+Rp50.000' : idx === 1 ? '+Rp30.000' : idx === 2 ? '+Rp20.000' : '';
+                return `<div class="glass-card p-3 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg">${medal}</span>
+                        <div>
+                            <span class="font-bold text-sm">${nama}</span>
+                            ${reward ? `<span class="text-[9px] ml-1 px-1.5 py-0.5 rounded-full" style="background:rgba(212,175,55,0.15);color:var(--gold);">${reward}</span>` : ''}
+                        </div>
+                    </div>
+                    <span class="text-gold font-bold text-sm">${data.total} <span class="text-[10px] font-normal text-gray-400">cuci</span></span>
+                </div>`;
+            }).join('');
+        }
+
+        function renderLaporanTukang() {
+            const container = $('laporanTukangDetail');
+            const gaji = getGajiTukangAllTime();
+            if (Object.keys(gaji).length === 0) {
+                container.innerHTML = '<div class="glass-card p-4 empty-state"><i class="fas fa-money-bill-wave"></i><p class="text-xs">Belum ada transaksi</p></div>';
+                return;
+            }
+            container.innerHTML = Object.entries(gaji).map(([nama, data]) => `
+                <div class="glass-card p-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-bold text-sm">${nama}</span>
+                        <span class="text-green-400 font-bold text-sm">${formatRupiah(data.total)}</span>
+                    </div>
+                    <div class="text-[10px] text-gray-400">${data.count} transaksi &bull; Rata-rata ${formatRupiah(data.count ? Math.round(data.total / data.count) : 0)} per cuci</div>
+                </div>
+            `).join('');
+        }
+
+        function renderRiwayatBiaya() {
+            const container = $('riwayatBiayaList');
+            if (appData.biaya.length === 0) {
+                container.innerHTML = '<div class="glass-card p-4 empty-state"><i class="fas fa-receipt"></i><p class="text-xs">Belum ada biaya</p></div>';
+                return;
+            }
+            const sorted = [...appData.biaya].sort((a, b) => (b.id > a.id ? 1 : -1));
+            container.innerHTML = sorted.map(b => `
+                <div class="glass-card p-3">
+                    <div class="flex justify-between">
+                        <div>
+                            <span class="font-bold text-xs">${b.kategori}</span>
+                            <p class="text-[9px] text-gray-400">${formatDateId(b.tanggal)}</p>
+                        </div>
+                        <span class="text-red-400 text-xs font-semibold">-${formatRupiah(b.nominal)}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderStaffList() {
+            const container = $('staffList');
+            const invites = Object.entries(Data.getStaffInvites()).filter(([code, inv]) => !inv.used);
+            if (invites.length === 0) {
+                container.innerHTML = '<div class="text-center text-xs text-gray-400 py-3">Belum ada staf</div>';
+                return;
+            }
+            container.innerHTML = invites.map(([code, inv]) => `
+                <div class="flex justify-between items-center py-2 border-b border-white/10">
+                    <div>
+                        <span class="text-sm">${inv.nama}</span>
+                        <br><span class="text-[9px] text-gray-400">${inv.email}</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-gold font-mono block">${code}</span>
+                        <button onclick="window.appCopyInvite('${code}')" class="text-blue-400 text-[10px] hover:underline">Salin</button>
+                        <button onclick="window.appDeleteStaff('${code}')" class="ml-2 text-red-400 text-[10px] hover:underline">Hapus</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStatusCounts() {
+            let avail = 0, busy = 0;
+            appData.tukang.forEach(t => {
+                if ((appData.tukangStatus[t.id] || 'available') === 'available') avail++;
+                else busy++;
+            });
+            $('availableCount').textContent = avail;
+            $('busyCount').textContent = busy;
+        }
+
+        // ==================== STATS & CALCULATIONS ====================
+        function getStatsByDate(date) {
+            const th = appData.transaksi.filter(t => t.tanggal === date);
+            const by = appData.biaya.filter(b => b.tanggal === date);
+            let tm = 0, tb = 0, pk = 0, jt = 0;
+            th.forEach(t => {
+                pk += t.harga;
+                jt += t.jasaTukang;
+                if (t.namaLayanan.toLowerCase().includes('motor')) tm++;
+                if (t.namaLayanan.toLowerCase().includes('mobil')) tb++;
+            });
+            const totalBiaya = by.reduce((s, b) => s + b.nominal, 0);
+            return { tm, tb, pk, jt, totalBiaya, laba: pk - jt - totalBiaya, transaksiHari: th, biayaHari: by };
+        }
+
+        function getGajiTukangByDate(date) {
+            let gaji = {};
+            appData.transaksi.filter(t => t.tanggal === date).forEach(t => {
+                gaji[t.namaTukang] = (gaji[t.namaTukang] || 0) + t.jasaTukang;
+            });
+            return gaji;
+        }
+
+        function getGajiTukangAllTime() {
+            let gaji = {};
+            appData.transaksi.forEach(t => {
+                if (!gaji[t.namaTukang]) gaji[t.namaTukang] = { total: 0, count: 0 };
+                gaji[t.namaTukang].total += t.jasaTukang;
+                gaji[t.namaTukang].count++;
+            });
+            return gaji;
+        }
+
+        function getWeeklyData() {
+            let data = {};
+            for (let i = 6; i >= 0; i--) {
+                let d = new Date();
+                d.setDate(d.getDate() - i);
+                let ds = d.toISOString().split('T')[0];
+                data[ds] = getStatsByDate(ds).laba;
+            }
+            return data;
+        }
+
+        // ==================== ACTIONS ====================
+        function bukaModalTransaksi(layananId) {
+            const layanan = appData.layanan.find(l => l.id === layananId);
+            if (!layanan) return;
+            const availableTukang = appData.tukang.filter(t => (appData.tukangStatus[t.id] || 'available') === 'available');
+            const select = $('pilihTukang');
+            select.innerHTML = '<option value="">Pilih tukang cuci</option>';
+            availableTukang.forEach(t => {
+                select.innerHTML += `<option value="${t.id}" data-nama="${t.nama}">${t.nama}</option>`;
+            });
+            if (availableTukang.length === 0) {
+                showToast('Tidak ada tukang tersedia!', 'warning');
+                return;
+            }
+            selectedLayanan = layanan;
+            $('transaksiModalTitle').textContent = layanan.nama;
+            $('transaksiModalPrice').innerHTML = `Harga: ${formatRupiah(layanan.harga)} | Jasa Tukang: ${formatRupiah(layanan.jasaTukang)}`;
+            $('platNomor').value = '';
+            select.value = '';
+            $('rekomendasiTukang').textContent = availableTukang.length + ' tukang tersedia';
+            openModal('transaksiModal');
+            setTimeout(() => $('platNomor').focus(), 100);
+        }
+
+        function catatTransaksi() {
+            const plat = $('platNomor').value.trim().toUpperCase();
+            const tukangId = $('pilihTukang').value;
+            const tukangNama = $('pilihTukang').options[$('pilihTukang').selectedIndex]?.dataset.nama;
+            if (!plat) { showToast('Plat nomor wajib diisi!', 'error'); return; }
+            if (!tukangId) { showToast('Pilih tukang!', 'error'); return; }
+            const active = {
+                id: generateId(),
+                layananId: selectedLayanan.id,
+                namaLayanan: selectedLayanan.nama,
+                harga: selectedLayanan.harga,
+                jasaTukang: selectedLayanan.jasaTukang,
+                tukangId: tukangId,
+                namaTukang: tukangNama,
+                platNomor: plat,
+                tanggal: todayStr(),
+                startTime: Date.now()
+            };
+            appData.activeTransaksi.push(active);
+            appData.tukangStatus[tukangId] = 'busy';
+            Data.save(appData);
+            renderActiveTransaksi();
+            renderTransaksiButtons();
+            updateStatusCounts();
+            closeModal('transaksiModal');
+            showToast(`🚗 ${selectedLayanan.nama} - ${plat} dimulai!`, 'success');
+        }
+
+        function selesaiTransaksi(activeId) {
+            const idx = appData.activeTransaksi.findIndex(t => t.id === activeId);
+            if (idx === -1) return;
+            const active = appData.activeTransaksi[idx];
+            appData.transaksi.push({
+                id: active.id,
+                namaLayanan: active.namaLayanan,
+                harga: active.harga,
+                jasaTukang: active.jasaTukang,
+                namaTukang: active.namaTukang,
+                platNomor: active.platNomor,
+                tanggal: active.tanggal,
+                completedAt: Date.now()
+            });
+            appData.activeTransaksi.splice(idx, 1);
+            appData.tukangStatus[active.tukangId] = 'available';
+            Data.save(appData);
+            renderActiveTransaksi();
+            renderDashboard();
+            renderRiwayatTransaksi();
+            renderTransaksiButtons();
+            renderLaporanTukang();
+            updateStatusCounts();
+            showToast('✅ Transaksi selesai! ' + formatRupiah(active.harga), 'success');
+        }
+
+        function batalkanTransaksi(activeId) {
+            const idx = appData.activeTransaksi.findIndex(t => t.id === activeId);
+            if (idx === -1) return;
+            const active = appData.activeTransaksi[idx];
+            appData.activeTransaksi.splice(idx, 1);
+            appData.tukangStatus[active.tukangId] = 'available';
+            Data.save(appData);
+            renderActiveTransaksi();
+            renderTransaksiButtons();
+            updateStatusCounts();
+            showToast('Transaksi dibatalkan', 'info');
+        }
+
+        function hapusLayanan(id) {
+            showConfirm('Hapus Layanan', 'Yakin ingin menghapus layanan ini?', () => {
+                appData.layanan = appData.layanan.filter(l => l.id !== id);
+                Data.save(appData);
+                renderLayananList();
+                renderTransaksiButtons();
+                showToast('Layanan dihapus', 'info');
+            });
+        }
+
+        function editLayanan(id) {
+            const l = appData.layanan.find(x => x.id === id);
+            if (!l) return;
+            editingLayananId = id;
+            $('editLayananNama').value = l.nama;
+            $('editLayananHarga').value = l.harga;
+            $('editLayananJasa').value = l.jasaTukang;
+            $('editLayananModalTitle').textContent = 'Edit Layanan';
+            openModal('editLayananModal');
+        }
+
+        function saveEditLayanan() {
+            const nama = $('editLayananNama').value.trim();
+            const harga = parseInt($('editLayananHarga').value) || 0;
+            const jasa = parseInt($('editLayananJasa').value) || 0;
+            if (!nama || harga <= 0 || jasa < 0) { showToast('Data tidak valid!', 'error'); return; }
+            if (editingLayananId) {
+                const idx = appData.layanan.findIndex(l => l.id === editingLayananId);
+                if (idx !== -1) { appData.layanan[idx] = { ...appData.layanan[idx], nama, harga, jasaTukang: jasa }; }
+            } else {
+                appData.layanan.push({ id: generateId(), nama, harga, jasaTukang: jasa });
+            }
+            Data.save(appData);
+            renderLayananList();
+            renderTransaksiButtons();
+            closeModal('editLayananModal');
+            editingLayananId = null;
+            showToast('Layanan disimpan!', 'success');
+        }
+
+        function hapusTukang(id) {
+            showConfirm('Hapus Tukang', 'Yakin ingin menghapus tukang ini?', () => {
+                appData.tukang = appData.tukang.filter(t => t.id !== id);
+                delete appData.tukangStatus[id];
+                Data.save(appData);
+                renderTukangList();
+                renderTransaksiButtons();
+                updateStatusCounts();
+                showToast('Tukang dihapus', 'info');
+            });
+        }
+
+        function editTukang(id) {
+            const t = appData.tukang.find(x => x.id === id);
+            if (!t) return;
+            editingTukangId = id;
+            $('editTukangNama').value = t.nama;
+            $('editTukangWa').value = t.wa || '';
+            openModal('editTukangModal');
+        }
+
+        function saveEditTukang() {
+            const nama = $('editTukangNama').value.trim();
+            const wa = $('editTukangWa').value.trim();
+            if (!nama) { showToast('Nama tidak boleh kosong!', 'error'); return; }
+            if (editingTukangId) {
+                const idx = appData.tukang.findIndex(t => t.id === editingTukangId);
+                if (idx !== -1) { appData.tukang[idx] = { ...appData.tukang[idx], nama, wa }; }
+            } else {
+                appData.tukang.push({ id: generateId(), nama, wa: wa || '' });
+            }
+            Data.save(appData);
+            renderTukangList();
+            renderTransaksiButtons();
+            closeModal('editTukangModal');
+            editingTukangId = null;
+            showToast('Tukang disimpan!', 'success');
+        }
+
+        function exportToPDF() {
+            const stats = getStatsByDate(selectedDate);
+            if (stats.transaksiHari.length === 0) { showToast('Tidak ada transaksi untuk tanggal ini!', 'warning'); return; }
+            const profil = appData.profil;
+            $('pdfNamaUsaha').textContent = profil.nama || 'CarWash99';
+            $('pdfAlamatUsaha').textContent = profil.alamat || '';
+            $('pdfTanggal').textContent = formatDateId(selectedDate);
+            $('pdfFooter').textContent = profil.footer || 'Terima Kasih';
+            let rows = stats.transaksiHari.map((t, i) => `
+                <tr><td style="border:1px solid #ddd;padding:8px;">${i + 1}</td><td style="border:1px solid #ddd;padding:8px;">${t.namaLayanan}</td><td style="border:1px solid #ddd;padding:8px;">${t.platNomor || '-'}</td><td style="border:1px solid #ddd;padding:8px;">${t.namaTukang}</td><td style="border:1px solid #ddd;padding:8px;text-align:right;">${formatRupiah(t.harga)}</td></tr>
+            `).join('');
+            $('pdfTableBody').innerHTML = rows;
+            $('pdfTotal').textContent = formatRupiah(stats.pk);
+            const element = $('pdfReportContent');
+            const opt = {
+                margin: 0.5,
+                filename: `Laporan_${profil.nama || 'CarWash99'}_${selectedDate}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            showToast('Membuat PDF...', 'info');
+            html2pdf().set(opt).from(element).save().then(() => {
+                showToast('PDF berhasil diunduh!', 'success');
+            }).catch(() => {
+                showToast('Gagal membuat PDF', 'error');
+            });
+        }
+
+        // ==================== MODAL & UI UTILS ====================
+        function openModal(id) { $(id).classList.add('show'); }
+        function closeModal(id) { $(id).classList.remove('show'); }
+        function showConfirm(title, message, onConfirm) {
+            $('confirmTitle').textContent = title;
+            $('confirmMessage').textContent = message;
+            confirmCallback = onConfirm;
+            $('confirmDialog').classList.add('show');
+        }
+        function hideConfirm() { $('confirmDialog').classList.remove('show'); confirmCallback = null; }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+            const target = $('tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+            if (target) target.style.display = 'block';
+            document.querySelectorAll('.tab-luxury').forEach(b => b.classList.remove('active'));
+            const btn = document.querySelector('.tab-luxury[data-tab="' + tabName + '"]');
+            if (btn) btn.classList.add('active');
+            if (tabName === 'dashboard') renderDashboard();
+            if (tabName === 'riwayat') renderRiwayatTransaksi();
+            if (tabName === 'layanan') renderLayananList();
+            if (tabName === 'tukang') renderTukangList();
+            if (tabName === 'leaderboard') renderLeaderboard();
+            if (tabName === 'biaya') renderRiwayatBiaya();
+            if (tabName === 'laporanTukang') renderLaporanTukang();
+            if (tabName === 'pengaturan') renderStaffList();
+        }
+
+        function loadProfil() {
+            const p = appData.profil;
+            $('headerNamaUsaha').textContent = p.nama || 'CarWash99';
+            $('showNamaUsaha').textContent = p.nama || '-';
+            $('showAlamatUsaha').textContent = p.alamat || '-';
+            $('showTeleponUsaha').textContent = p.telepon || '-';
+            $('namaUsaha').value = p.nama || '';
+            $('alamatUsaha').value = p.alamat || '';
+            $('teleponUsaha').value = p.telepon || '';
+            $('footerStruk').value = p.footer || '';
+        }
+
+        // ==================== EVENT BINDING ====================
+        function bindEvents() {
+            // License
+            $('activateLicenseBtn').onclick = () => {
+                const key = $('licenseKey').value.trim();
+                const email = $('licenseEmail').value.trim();
+                const err = $('licenseError');
+                const suc = $('licenseSuccess');
+                err.classList.add('hidden');
+                suc.classList.add('hidden');
+                const res = activateLicense(key, email);
+                if (res.valid) {
+                    suc.textContent = res.message;
+                    suc.classList.remove('hidden');
+                    setTimeout(() => { showScreen('login'); $('ownerEmail').value = email; showToast('Silakan buat password untuk akun Owner Anda!', 'info'); }, 1500);
+                } else {
+                    err.textContent = res.message;
+                    err.classList.remove('hidden');
+                }
+            };
+
+            // Login tabs
+            $('tabOwnerLogin').onclick = () => {
+                $('tabOwnerLogin').className = 'flex-1 py-2 rounded-xl text-sm font-semibold btn-gold';
+                $('tabStaffLogin').className = 'flex-1 py-2 rounded-xl text-sm font-semibold';
+                $('tabStaffLogin').style.cssText = 'background:rgba(255,255,255,0.05);color:var(--text-secondary);';
+                $('ownerLoginForm').style.display = 'block';
+                $('staffLoginForm').style.display = 'none';
+            };
+            $('tabStaffLogin').onclick = () => {
+                $('tabStaffLogin').className = 'flex-1 py-2 rounded-xl text-sm font-semibold btn-gold';
+                $('tabOwnerLogin').className = 'flex-1 py-2 rounded-xl text-sm font-semibold';
+                $('tabOwnerLogin').style.cssText = 'background:rgba(255,255,255,0.05);color:var(--text-secondary);';
+                $('ownerLoginForm').style.display = 'none';
+                $('staffLoginForm').style.display = 'block';
+            };
+
+            // Owner login
+            $('ownerLoginBtn').onclick = () => {
+                const email = $('ownerEmail').value.trim();
+                const password = $('ownerPassword').value;
+                if (!email) { showToast('Isi email!', 'error'); return; }
+                const owners = Data.getOwners();
+                if (!owners[email]) { showToast('Email tidak terdaftar!', 'error'); return; }
+                if (!owners[email].password) {
+                    if (!password) { showToast('Buat password untuk akun Owner Anda!', 'error'); return; }
+                    if (password.length < 6) { showToast('Password minimal 6 karakter!', 'error'); return; }
+                    owners[email].password = password;
+                    Data.saveOwners(owners);
+                    showAppScreen('owner', { email });
+                    showToast('Akun Owner berhasil dibuat! Selamat datang!', 'success');
+                } else {
+                    if (owners[email].password === password) {
+                        showAppScreen('owner', { email });
+                        showToast('Login berhasil!', 'success');
+                    } else {
+                        showToast('Password salah!', 'error');
+                    }
+                }
+            };
+
+            $('ownerRegisterBtn').onclick = () => { openModal('registerOwnerModal'); };
+            $('closeRegisterOwnerModal').onclick = () => closeModal('registerOwnerModal');
+            $('confirmRegisterOwnerBtn').onclick = () => {
+                const email = $('regOwnerEmail').value.trim();
+                const password = $('regOwnerPassword').value;
+                if (!email) { showToast('Masukkan email!', 'error'); return; }
+                if (password.length < 6) { showToast('Password minimal 6 karakter!', 'error'); return; }
+                const res = registerOwner(email, password);
+                if (res.success) {
+                    showToast(res.message, 'success');
+                    closeModal('registerOwnerModal');
+                    $('ownerEmail').value = email;
+                } else {
+                    showToast(res.message, 'error');
+                }
+            };
+
+            $('ownerForgotBtn').onclick = () => { openModal('forgotPasswordModal'); };
+            $('closeForgotModal').onclick = () => closeModal('forgotPasswordModal');
+            $('sendResetLinkBtn').onclick = () => {
+                const email = $('resetEmail').value.trim();
+                const owners = Data.getOwners();
+                if (email && owners[email]) {
+                    const newPass = Math.random().toString(36).substring(2, 8);
+                    owners[email].password = newPass;
+                    Data.saveOwners(owners);
+                    showToast('Password direset: ' + newPass + ' (simulasi)', 'success');
+                    closeModal('forgotPasswordModal');
+                } else {
+                    showToast('Email tidak terdaftar!', 'error');
+                }
+            };
+
+            // Staff login
+            $('staffLoginBtn').onclick = () => {
+                const code = $('staffInviteCode').value.trim().toUpperCase();
+                const password = $('staffPassword').value;
+                const err = $('staffLoginError');
+                if (!code || !password) { err.textContent = 'Isi kode undangan dan password!'; err.classList.remove('hidden'); return; }
+                if (verifyStaffLogin(code, password)) {
+                    const accounts = Data.getStaffAccounts();
+                    const acc = accounts[code];
+                    showAppScreen('staff', { nama: acc.nama, email: acc.email });
+                    showToast('Login berhasil!', 'success');
+                    return;
+                }
+                const invites = Data.getStaffInvites();
+                const invite = invites[code];
+                if (!invite) { err.textContent = 'Kode undangan tidak valid!'; err.classList.remove('hidden'); return; }
+                if (invite.used && !Data.getStaffAccounts()[code]) { err.textContent = 'Kode undangan sudah digunakan!'; err.classList.remove('hidden'); return; }
+                const res = validateStaffInvite(code, password);
+                if (res.valid) {
+                    showAppScreen('staff', { nama: invite.nama, email: invite.email });
+                    showToast('Akun staf berhasil dibuat! Login otomatis.', 'success');
+                } else {
+                    err.textContent = res.message;
+                    err.classList.remove('hidden');
+                }
+            };
+
+            // App header
+            $('logoutAppBtn').onclick = () => {
+                Data.clearSession();
+                currentRole = null;
+                currentUser = null;
+                showScreen('login');
+                showToast('Berhasil keluar', 'info');
+            };
+            $('profilUsahaBtn').onclick = () => { loadProfil(); openModal('profilUsahaModal'); };
+            $('editProfilBtn').onclick = () => { loadProfil(); openModal('profilUsahaModal'); };
+            $('closeProfilModal').onclick = () => closeModal('profilUsahaModal');
+            $('saveProfilBtn').onclick = () => {
+                appData.profil = {
+                    nama: $('namaUsaha').value.trim() || 'CarWash99',
+                    alamat: $('alamatUsaha').value.trim(),
+                    telepon: $('teleponUsaha').value.trim(),
+                    footer: $('footerStruk').value.trim() || 'Terima Kasih 🙏'
+                };
+                Data.save(appData);
+                loadProfil();
+                closeModal('profilUsahaModal');
+                showToast('Profil usaha berhasil disimpan!', 'success');
+            };
+
+            // Tabs
+            document.querySelectorAll('.tab-luxury').forEach(btn => {
+                btn.onclick = () => switchTab(btn.dataset.tab);
+            });
+
+            // Dashboard date nav
+            $('prevDay').onclick = () => { let d = new Date(selectedDate + 'T00:00:00'); d.setDate(d.getDate() - 1); selectedDate = d.toISOString().split('T')[0]; renderDashboard(); };
+            $('nextDay').onclick = () => { let d = new Date(selectedDate + 'T00:00:00'); d.setDate(d.getDate() + 1); selectedDate = d.toISOString().split('T')[0]; renderDashboard(); };
+            $('todayBtn').onclick = () => { selectedDate = todayStr(); renderDashboard(); };
+            $('exportPdfBtn').onclick = exportToPDF;
+
+            // Transaksi modal
+            $('closeTransaksiModal').onclick = () => closeModal('transaksiModal');
+            $('confirmTransaksiBtn').onclick = catatTransaksi;
+
+            // Layanan
+            $('tambahLayananBtn').onclick = () => {
+                editingLayananId = null;
+                $('editLayananNama').value = '';
+                $('editLayananHarga').value = '';
+                $('editLayananJasa').value = '';
+                $('editLayananModalTitle').textContent = 'Tambah Layanan';
+                openModal('editLayananModal');
+            };
+            $('closeEditLayananModal').onclick = () => closeModal('editLayananModal');
+            $('saveEditLayananBtn').onclick = saveEditLayanan;
+
+            // Tukang
+            $('tambahTukangBtn').onclick = () => {
+                editingTukangId = null;
+                $('editTukangNama').value = '';
+                $('editTukangWa').value = '';
+                openModal('editTukangModal');
+            };
+            $('closeEditTukangModal').onclick = () => closeModal('editTukangModal');
+            $('saveEditTukangBtn').onclick = saveEditTukang;
+
+            // Biaya
+            $('tambahBiayaBtn').onclick = () => {
+                const kategori = prompt('Kategori biaya:');
+                const nominal = prompt('Nominal:');
+                if (kategori && nominal && !isNaN(nominal)) {
+                    appData.biaya.push({ id: generateId(), kategori: kategori.trim(), nominal: Math.abs(parseInt(nominal)), tanggal: selectedDate });
+                    Data.save(appData);
+                    renderDashboard();
+                    renderRiwayatBiaya();
+                    showToast('Biaya ditambahkan', 'success');
+                }
+            };
+            $('tambahBiayaDariTabBtn').onclick = () => {
+                const kategori = prompt('Kategori biaya:');
+                const nominal = prompt('Nominal:');
+                if (kategori && nominal && !isNaN(nominal)) {
+                    appData.biaya.push({ id: generateId(), kategori: kategori.trim(), nominal: Math.abs(parseInt(nominal)), tanggal: todayStr() });
+                    Data.save(appData);
+                    renderRiwayatBiaya();
+                    showToast('Biaya ditambahkan', 'success');
+                }
+            };
+
+            // Staff
+            $('tambahStaffBtn').onclick = () => { openModal('tambahStaffModal'); };
+            $('closeStaffModal').onclick = () => closeModal('tambahStaffModal');
+            $('confirmStaffBtn').onclick = () => {
+                const nama = $('staffNama').value.trim();
+                const email = $('staffEmailInput').value.trim();
+                if (!nama || !email) { showToast('Isi nama dan email staf!', 'error'); return; }
+                const ownerId = localStorage.getItem(SK.LICENSE_EMAIL) || 'owner';
+                const code = addStaffInvite(nama, email, ownerId);
+                $('staffNama').value = '';
+                $('staffEmailInput').value = '';
+                closeModal('tambahStaffModal');
+                $('inviteCodeDisplay').textContent = code;
+                openModal('inviteCodeModal');
+                renderStaffList();
+            };
+            $('closeInviteModal').onclick = () => closeModal('inviteCodeModal');
+            $('copyInviteBtn').onclick = () => {
+                const code = $('inviteCodeDisplay').textContent;
+                navigator.clipboard.writeText(code);
+                showToast('Kode undangan disalin!', 'success');
+            };
+
+            // Leaderboard
+            $('leaderboardWeeklyBtn').onclick = () => { leaderboardPeriod = 'weekly'; renderLeaderboard(); };
+            $('leaderboardMonthlyBtn').onclick = () => { leaderboardPeriod = 'monthly'; renderLeaderboard(); };
+
+            // Confirm dialog
+            $('confirmCancelBtn').onclick = hideConfirm;
+            $('confirmOkBtn').onclick = () => { if (confirmCallback) confirmCallback(); hideConfirm(); };
+
+            // Search riwayat
+            $('searchRiwayat').oninput = renderRiwayatTransaksi;
+
+            // Keyboard: ESC to close modals
+            document.onkeydown = (e) => {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+                    hideConfirm();
+                }
+            };
+
+            // Click outside modal to close
+            document.querySelectorAll('.modal-overlay').forEach(modal => {
+                modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('show'); };
+            });
+        }
+
+        // ==================== GLOBAL EXPORTS FOR ONCLICK ====================
+        window.appBukaTransaksi = bukaModalTransaksi;
+        window.appSelesai = selesaiTransaksi;
+        window.appBatalkan = batalkanTransaksi;
+        window.appHapusLayanan = hapusLayanan;
+        window.appEditLayanan = editLayanan;
+        window.appHapusTukang = hapusTukang;
+        window.appEditTukang = editTukang;
+        window.appCopyInvite = (code) => { navigator.clipboard.writeText(code); showToast('Kode disalin!', 'success'); };
+        window.appDeleteStaff = (code) => {
+            showConfirm('Hapus Staf', 'Yakin ingin menghapus undangan staf ini?', () => {
+                const invites = Data.getStaffInvites();
+                delete invites[code];
+                Data.saveStaffInvites(invites);
+                renderStaffList();
+                showToast('Undangan dihapus', 'info');
+            });
+        };
+
+        // ==================== PARTICLES ====================
+        function initParticles() {
+            const canvas = $('particleCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            resize();
+            window.addEventListener('resize', resize);
+            for (let i = 0; i < 30; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+                    size: Math.random() * 2, vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2,
+                    opacity: Math.random() * 0.3, color: Math.random() > 0.7 ? '212,175,55' : '96,165,250'
+                });
+            }
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${p.color},${p.opacity})`; ctx.fill();
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // ==================== INIT ====================
+        bindEvents();
+        initParticles();
+        checkAuthState();
+    })();
+    </script>
+</body>
+</html>
